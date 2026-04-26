@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "binserde-core",
+    "binserde-derive",
+    "binserde"
+]
+resolver = "3"
+[workspace.dependencies]
+binserde-core= { path = "binserde-core" }
+binserde-derive= { path = "binserde-derive" }
