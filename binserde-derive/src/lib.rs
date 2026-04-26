@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 
 use crate::{de::derive_decode_impl, en::derive_encode_impl};
 
-mod en;
 mod de;
+mod en;
 
 #[proc_macro_derive(Encode)]
 pub fn derive_encode(input: TokenStream) -> TokenStream {

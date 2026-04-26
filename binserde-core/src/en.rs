@@ -18,6 +18,8 @@ pub trait Encoder {
     fn encode_i128(&mut self, value: i128) -> Result<(), Self::Error>;
     fn encode_f32(&mut self, value: f32) -> Result<(), Self::Error>;
     fn encode_f64(&mut self, value: f64) -> Result<(), Self::Error>;
+
+    // this is for variable length byte arrays
     fn encode_bytes(&mut self, value: &[u8]) -> Result<(), Self::Error>;
     fn encode_string(&mut self, value: &str) -> Result<(), Self::Error>;
 

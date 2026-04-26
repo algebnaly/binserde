@@ -7,10 +7,7 @@ pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::
     let name = &derive_input.ident;
 
     let expanded = match derive_input.data {
-        Data::Struct(d_struct) => {
-            let r = encode_impl_for_struct(d_struct);
-            r
-        }
+        Data::Struct(d_struct) => encode_impl_for_struct(d_struct),
         Data::Enum(_d_enum) => TokenStream::new(),
         Data::Union(_d_union) => {
             unimplemented!("Union types are not supported yet")
@@ -42,6 +39,15 @@ fn encode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
 }
 
 fn _encode_impl_for_enum(d_enum: syn::DataEnum) -> TokenStream {
+    let variants = d_enum.variants.iter().map(|variant| {
+        let variant_name = &variant.ident;
+        quote! {
+            $variant_name => {
+                encoder.write_u8(0)?;
+                Ok(())
+            }
+        }
+    });
     let _variants = &d_enum.variants;
     let _expanded = quote! {};
     TokenStream::new()

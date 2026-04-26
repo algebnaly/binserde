@@ -107,6 +107,10 @@ impl Encoder for SimpleBinaryEncoder {
         self.output.write_all(value).map_err(|e| e.to_string())
     }
 
+    fn encode_string(&mut self, value: &str) -> Result<(), Self::Error> {
+        self.encode_bytes(value.as_bytes())
+    }
+
     fn encode_byte_array<const N: usize>(&mut self, value: &[u8; N]) -> Result<(), Self::Error> {
         self.output.write_all(value).map_err(|e| e.to_string())
     }

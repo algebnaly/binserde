@@ -116,6 +116,11 @@ impl Decoder for SimpleBinaryDecoder {
         Ok(buf)
     }
 
+    fn decode_string(&mut self) -> Result<String, Self::Error> {
+        let bytes = self.decode_bytes()?;
+        String::from_utf8(bytes).map_err(|e| e.to_string())
+    }
+
     fn decode_byte_array(&mut self, len: usize) -> Result<Vec<u8>, Self::Error> {
         let mut buf = vec![0u8; len];
         self.read_exact(&mut buf)?;
@@ -138,7 +143,7 @@ mod tests {
     use binserde_core::de::Decode;
 
     use super::*;
-    
+
     #[test]
     fn test_decode_struct() {
         struct TestStruct {
@@ -153,33 +158,37 @@ mod tests {
         }
 
         impl Decode for InnerStruct {
-            type Value = InnerStruct;
-            fn decode<D: Decoder>(mut dec: D) -> Result<Self::Value, D::Error> {
+            fn decode<D: Decoder>(mut dec: D) -> Result<Self, D::Error> {
                 let v_u32 = dec.decode_u32()?;
                 let v_buf = dec.decode_byte_array(4)?;
-                let v_array = v_buf.try_into().unwrap();
+                let mut v_array = [0u8; 4];
+                v_array.copy_from_slice(&v_buf);
                 Ok(InnerStruct { v_u32, v_array })
             }
         }
-        
+
         impl Decode for TestStruct {
-            type Value = TestStruct;
-            fn decode<D: Decoder>(mut dec: D) -> Result<Self::Value, D::Error> {
+            fn decode<D: Decoder>(mut dec: D) -> Result<Self, D::Error> {
                 let v_i32 = dec.decode_i32()?;
                 let b = dec.decode_bool()?;
-                let v_inner_struct = InnerStruct::decode(dec)?;
-                Ok(TestStruct { v_i32, b, v_inner_struct })
+                let v_inner_struct = InnerStruct::decode(&mut dec)?;
+                Ok(TestStruct {
+                    v_i32,
+                    b,
+                    v_inner_struct,
+                })
             }
         }
-        
-        let buf = vec![0xfe,0xff,0xff,0xff,// i32, value: -2
-            1,// bool, value: true,
-            0,1,0,0,// u32, value: 256
-            0,1,2,3// array, value: [0, 1, 2, 3]
+
+        let buf = vec![
+            0xfe, 0xff, 0xff, 0xff, // i32, value: -2
+            1,    // bool, value: true,
+            0, 1, 0, 0, // u32, value: 256
+            0, 1, 2, 3, // array, value: [0, 1, 2, 3]
         ];
-        
-        let mut dec = SimpleBinaryDecoder::new(buf.clone());
-        let test_struct = TestStruct::decode(&mut dec).unwrap();
+
+        let dec = SimpleBinaryDecoder::new(buf);
+        let test_struct = TestStruct::decode(dec).unwrap();
         assert_eq!(test_struct.v_i32, -2);
         assert_eq!(test_struct.b, true);
         assert_eq!(test_struct.v_inner_struct.v_u32, 256);

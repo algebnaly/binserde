@@ -1,10 +1,8 @@
-pub mod en;
 pub mod de;
+pub mod en;
 
-pub use en::{Encode, Encoder};
 pub use de::{Decode, Decoder};
+pub use en::{Encode, Encoder};
 
 #[cfg(test)]
-mod tests {
-    
-}
+mod tests {}

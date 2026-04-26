@@ -1,2 +1,2 @@
-pub use binserde_derive::{Encode, Decode};
-pub use binserde_core::{en::Encode, en::Encoder, de::Decode, de::Decoder};
+pub use binserde_core::{de::Decode, de::Decoder, en::Encode, en::Encoder};
+pub use binserde_derive::{Decode, Encode};
