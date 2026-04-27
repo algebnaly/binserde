@@ -1,4 +1,4 @@
-use binserde::{Encode, Encoder};
+use binserde::{Encode, Encoder, EnumEncoder};
 
 const fn const_func() -> u32 {
     41
@@ -14,19 +14,24 @@ enum MyEnum {
 }
 
 impl Encode for MyEnum {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), E::Error> {
         match self {
-            MyEnum::Variant1 => encoder.encode_u32(5)?,
+            MyEnum::Variant1 => {
+                let mut v = encoder.encode_variant()?;
+                v.encode_variant(1, "Variant1", &())?;
+                v.end()
+            }
             MyEnum::Variant2(value) => {
-                encoder.encode_u32(VAL as u32)?;
-                encoder.encode_i32(*value)?
+                let mut v = encoder.encode_variant()?;
+                v.encode_variant(2, "Variant2", value)?;
+                v.end()
             }
             MyEnum::Variant3(value) => {
-                encoder.encode_u32(const_func())?;
-                encoder.encode_string(value)?
+                let mut v = encoder.encode_variant()?;
+                v.encode_variant(3, "Variant3", value)?;
+                v.end()
             }
         }
-        Ok(())
     }
 }
 
