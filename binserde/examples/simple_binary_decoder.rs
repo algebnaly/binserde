@@ -1,4 +1,5 @@
 use binserde_core::de::Decoder;
+use binserde_core::de::{EnumDecoder, MapDecoder, SeqDecoder, StructDecoder, TupleDecoder};
 
 struct SimpleBinaryDecoder {
     input: Vec<u8>,
@@ -23,119 +24,212 @@ impl SimpleBinaryDecoder {
     }
 }
 
-impl Decoder for SimpleBinaryDecoder {
+impl Decoder for &mut SimpleBinaryDecoder {
     type Error = String;
+    type EnumDecoder = Self;
+    type StructDecoder = Self;
+    type SeqDecoder = Self;
+    type MapDecoder = Self;
+    type TupleDecoder = Self;
 
-    fn decode_unit(&mut self) -> Result<(), Self::Error> {
+    fn decode_unit(self) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn decode_bool(&mut self) -> Result<bool, Self::Error> {
+    fn decode_bool(self) -> Result<bool, Self::Error> {
         let mut buf = [0u8; 1];
         self.read_exact(&mut buf)?;
         Ok(u8::from_le_bytes(buf) != 0)
     }
 
-    fn decode_u8(&mut self) -> Result<u8, Self::Error> {
+    fn decode_u8(self) -> Result<u8, Self::Error> {
         let mut buf = [0u8; 1];
         self.read_exact(&mut buf)?;
         Ok(u8::from_le_bytes(buf))
     }
 
-    fn decode_u16(&mut self) -> Result<u16, Self::Error> {
+    fn decode_u16(self) -> Result<u16, Self::Error> {
         let mut buf = [0u8; 2];
         self.read_exact(&mut buf)?;
         Ok(u16::from_le_bytes(buf))
     }
 
-    fn decode_u32(&mut self) -> Result<u32, Self::Error> {
+    fn decode_u32(self) -> Result<u32, Self::Error> {
         let mut buf = [0u8; 4];
         self.read_exact(&mut buf)?;
         Ok(u32::from_le_bytes(buf))
     }
 
-    fn decode_u64(&mut self) -> Result<u64, Self::Error> {
+    fn decode_u64(self) -> Result<u64, Self::Error> {
         let mut buf = [0u8; 8];
         self.read_exact(&mut buf)?;
         Ok(u64::from_le_bytes(buf))
     }
 
-    fn decode_u128(&mut self) -> Result<u128, Self::Error> {
+    fn decode_u128(self) -> Result<u128, Self::Error> {
         let mut buf = [0u8; 16];
         self.read_exact(&mut buf)?;
         Ok(u128::from_le_bytes(buf))
     }
 
-    fn decode_i8(&mut self) -> Result<i8, Self::Error> {
+    fn decode_i8(self) -> Result<i8, Self::Error> {
         let mut buf = [0u8; 1];
         self.read_exact(&mut buf)?;
         Ok(i8::from_le_bytes(buf))
     }
 
-    fn decode_i16(&mut self) -> Result<i16, Self::Error> {
+    fn decode_i16(self) -> Result<i16, Self::Error> {
         let mut buf = [0u8; 2];
         self.read_exact(&mut buf)?;
         Ok(i16::from_le_bytes(buf))
     }
 
-    fn decode_i32(&mut self) -> Result<i32, Self::Error> {
+    fn decode_i32(self) -> Result<i32, Self::Error> {
         let mut buf = [0u8; 4];
         self.read_exact(&mut buf)?;
         Ok(i32::from_le_bytes(buf))
     }
 
-    fn decode_i64(&mut self) -> Result<i64, Self::Error> {
+    fn decode_i64(self) -> Result<i64, Self::Error> {
         let mut buf = [0u8; 8];
         self.read_exact(&mut buf)?;
         Ok(i64::from_le_bytes(buf))
     }
 
-    fn decode_i128(&mut self) -> Result<i128, Self::Error> {
+    fn decode_i128(self) -> Result<i128, Self::Error> {
         let mut buf = [0u8; 16];
         self.read_exact(&mut buf)?;
         Ok(i128::from_le_bytes(buf))
     }
 
-    fn decode_f32(&mut self) -> Result<f32, Self::Error> {
+    fn decode_f32(self) -> Result<f32, Self::Error> {
         let mut buf = [0u8; 4];
         self.read_exact(&mut buf)?;
         Ok(f32::from_le_bytes(buf))
     }
 
-    fn decode_f64(&mut self) -> Result<f64, Self::Error> {
+    fn decode_f64(self) -> Result<f64, Self::Error> {
         let mut buf = [0u8; 8];
         self.read_exact(&mut buf)?;
         Ok(f64::from_le_bytes(buf))
     }
 
-    fn decode_bytes(&mut self) -> Result<Vec<u8>, Self::Error> {
-        // Length is stored as u32 little‑endian.
+    fn decode_some(self) -> Result<(), Self::Error> {
+        let tag = self.decode_u8()?;
+        if tag != 1 {
+            return Err("expected Some tag".to_string());
+        }
+        Ok(())
+    }
+
+    fn decode_none(self) -> Result<(), Self::Error> {
+        let tag = self.decode_u8()?;
+        if tag != 0 {
+            return Err("expected None tag".to_string());
+        }
+        Ok(())
+    }
+
+    fn decode_bytes(self) -> Result<Vec<u8>, Self::Error> {
         let len = self.decode_u32()? as usize;
         let mut buf = vec![0u8; len];
         self.read_exact(&mut buf)?;
         Ok(buf)
     }
 
-    fn decode_string(&mut self) -> Result<String, Self::Error> {
+    fn decode_string(self) -> Result<String, Self::Error> {
         let bytes = self.decode_bytes()?;
         String::from_utf8(bytes).map_err(|e| e.to_string())
     }
 
-    fn decode_byte_array(&mut self, len: usize) -> Result<Vec<u8>, Self::Error> {
-        let mut buf = vec![0u8; len];
+    fn decode_byte_array<const N: usize>(self) -> Result<[u8; N], Self::Error> {
+        let mut buf = [0u8; N];
         self.read_exact(&mut buf)?;
         Ok(buf)
+    }
+
+    fn decode_struct(self, _name: &str, _len: usize) -> Result<Self::StructDecoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn decode_variant(self) -> Result<Self::EnumDecoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn decode_seq(self, _len: Option<usize>) -> Result<Self::SeqDecoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn decode_map(self, _len: Option<usize>) -> Result<Self::MapDecoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn decode_tuple(self, _len: usize) -> Result<Self::TupleDecoder, Self::Error> {
+        Ok(self)
+    }
+}
+
+// Sub-decoder impls stubs — delegate back to Decoder methods
+
+impl EnumDecoder for &mut SimpleBinaryDecoder {
+    type Error = String;
+    fn decode_variant<T: binserde_core::Decode>(
+        &mut self,
+    ) -> Result<(binserde_core::Discriminant, String, T), Self::Error> {
+        todo!("EnumDecoder::decode_variant")
+    }
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl StructDecoder for &mut SimpleBinaryDecoder {
+    type Error = String;
+    fn decode_field<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
+    }
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl SeqDecoder for &mut SimpleBinaryDecoder {
+    type Error = String;
+    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<Option<T>, Self::Error> {
+        todo!("SeqDecoder::decode_element")
+    }
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl MapDecoder for &mut SimpleBinaryDecoder {
+    type Error = String;
+    fn decode_key<T: binserde_core::Decode>(&mut self) -> Result<Option<T>, Self::Error> {
+        todo!("MapDecoder::decode_key")
+    }
+    fn decode_value<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
+    }
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl TupleDecoder for &mut SimpleBinaryDecoder {
+    type Error = String;
+    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
+    }
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
 
 fn main() {
-    let v = vec![1, 2, 3, 4];
-    let mut dec = SimpleBinaryDecoder::new(v.clone());
-
-    let dec_v = (&mut dec).decode_byte_array(4).unwrap();
-
-    assert_eq!(v, dec_v);
-    println!("Decoder test passed");
+    println!(
+        "SimpleBinaryDecoder example — run tests with: cargo test --example simple_binary_decoder"
+    );
 }
 
 #[cfg(test)]
@@ -158,20 +252,22 @@ mod tests {
         }
 
         impl Decode for InnerStruct {
-            fn decode<D: Decoder>(mut dec: D) -> Result<Self, D::Error> {
-                let v_u32 = dec.decode_u32()?;
-                let v_buf = dec.decode_byte_array(4)?;
-                let mut v_array = [0u8; 4];
-                v_array.copy_from_slice(&v_buf);
+            fn decode<D: Decoder>(dec: D) -> Result<Self, D::Error> {
+                let mut s = dec.decode_struct("InnerStruct", 2)?;
+                let v_u32 = StructDecoder::decode_field::<u32>(&mut s)?;
+                let v_array = StructDecoder::decode_field::<[u8; 4]>(&mut s)?;
+                StructDecoder::end(&mut s)?;
                 Ok(InnerStruct { v_u32, v_array })
             }
         }
 
         impl Decode for TestStruct {
-            fn decode<D: Decoder>(mut dec: D) -> Result<Self, D::Error> {
-                let v_i32 = dec.decode_i32()?;
-                let b = dec.decode_bool()?;
-                let v_inner_struct = InnerStruct::decode(&mut dec)?;
+            fn decode<D: Decoder>(dec: D) -> Result<Self, D::Error> {
+                let mut s = dec.decode_struct("TestStruct", 3)?;
+                let v_i32 = StructDecoder::decode_field::<i32>(&mut s)?;
+                let b = StructDecoder::decode_field::<bool>(&mut s)?;
+                let v_inner_struct = StructDecoder::decode_field::<InnerStruct>(&mut s)?;
+                StructDecoder::end(&mut s)?;
                 Ok(TestStruct {
                     v_i32,
                     b,
@@ -187,12 +283,11 @@ mod tests {
             0, 1, 2, 3, // array, value: [0, 1, 2, 3]
         ];
 
-        let dec = SimpleBinaryDecoder::new(buf);
-        let test_struct = TestStruct::decode(dec).unwrap();
+        let mut dec = SimpleBinaryDecoder::new(buf);
+        let test_struct = TestStruct::decode(&mut dec).unwrap();
         assert_eq!(test_struct.v_i32, -2);
         assert_eq!(test_struct.b, true);
         assert_eq!(test_struct.v_inner_struct.v_u32, 256);
         assert_eq!(test_struct.v_inner_struct.v_array, [0, 1, 2, 3]);
-        println!("Decoder test passed");
     }
 }

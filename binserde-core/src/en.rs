@@ -33,6 +33,8 @@ pub trait Encoder {
 
     fn encode_byte_array<const N: usize>(self, value: &[u8; N]) -> Result<(), Self::Error>;
 
+    fn encode_struct(self, name: &str, len: usize) -> Result<Self::StructEncoder, Self::Error>;
+
     fn encode_variant(self) -> Result<Self::EnumEncoder, Self::Error>;
 
     fn encode_seq(self, len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error>;
@@ -42,31 +44,26 @@ pub trait Encoder {
     fn encode_tuple(self, len: usize) -> Result<Self::TupleEncoder, Self::Error>;
 }
 
-// keep user from accidentally implementing EnumDiscriminant
-mod sealed_mod {
-    pub trait Sealed {}
+pub enum Discriminant {
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    U128(u128),
+    Usize(usize),
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+    I128(i128),
+    Isize(isize),
 }
-
-pub trait EnumDiscriminant: sealed_mod::Sealed {}
-
-macro_rules! impl_enum_discriminant {
-    ($($ty:ty),*) => {
-        $(
-            impl sealed_mod::Sealed for $ty {}
-            impl EnumDiscriminant for $ty {}
-        )*
-    };
-}
-
-impl_enum_discriminant!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-);
 
 pub trait EnumEncoder {
     type Error;
-    fn encode_variant<D: EnumDiscriminant, T: Encode>(
+    fn encode_variant<T: Encode>(
         &mut self,
-        discriminant: D,
+        discriminant: Discriminant,
         variant_name: &str,
         value: &T,
     ) -> Result<(), Self::Error>;

@@ -83,6 +83,12 @@ impl Encode for String {
     }
 }
 
+impl<const N: usize> Encode for [u8; N] {
+    fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
+        e.encode_byte_array(self)
+    }
+}
+
 impl<T: Encode> Encode for Vec<T>
 where
     T: Encode,

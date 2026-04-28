@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use binserde::{Encode, EnumEncoder, MapEncoder, SeqEncoder, StructEncoder};
-use binserde_core::en::Encoder;
+use binserde::{Discriminant, Encode, EnumEncoder, MapEncoder, SeqEncoder, StructEncoder};
+use binserde_core::en::{Encoder, TupleEncoder};
 
 struct SimpleBinaryEncoder {
     output: Vec<u8>,
@@ -23,7 +23,9 @@ impl Encoder for &mut SimpleBinaryEncoder {
     type MapEncoder = Self;
     type SeqEncoder = Self;
     type StructEncoder = Self;
-    fn encode_unit(&mut self) -> Result<(), Self::Error> {
+    type TupleEncoder = Self;
+
+    fn encode_unit(self) -> Result<(), Self::Error> {
         Ok(())
     }
 
@@ -122,40 +124,78 @@ impl Encoder for &mut SimpleBinaryEncoder {
         self.output.write_all(value).map_err(|e| e.to_string())
     }
 
-    fn encode_string(&mut self, value: &str) -> Result<(), Self::Error> {
+    fn encode_string(self, value: &str) -> Result<(), Self::Error> {
         self.encode_bytes(value.as_bytes())
     }
 
-    fn encode_byte_array<const N: usize>(&mut self, value: &[u8; N]) -> Result<(), Self::Error> {
+    fn encode_byte_array<const N: usize>(self, value: &[u8; N]) -> Result<(), Self::Error> {
         self.output.write_all(value).map_err(|e| e.to_string())
     }
 
-    fn encode_variant<T: Encode>(&mut self) -> Result<Self, Self::Error> {
+    fn encode_struct(self, _name: &str, _len: usize) -> Result<Self::StructEncoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn encode_variant(self) -> Result<Self::EnumEncoder, Self::Error> {
         self.encode_u32(0)?;
         Ok(self)
     }
 
-    fn encode_seq(self, len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error> {
+    fn encode_seq(self, _len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error> {
         Ok(self)
     }
 
-    fn encode_map(self, len: Option<usize>) -> Result<Self::MapEncoder, Self::Error> {
+    fn encode_map(self, _len: Option<usize>) -> Result<Self::MapEncoder, Self::Error> {
+        Ok(self)
+    }
+
+    fn encode_tuple(self, _len: usize) -> Result<Self::TupleEncoder, Self::Error> {
         Ok(self)
     }
 }
 
-impl EnumEncoder for SimpleBinaryEncoder {
+impl EnumEncoder for &mut SimpleBinaryEncoder {
     type Error = String;
-    type Discriminant = u32;
+
     fn encode_variant<T: Encode>(
         &mut self,
-        discriminant: Self::Discriminant,
+        discriminant: Discriminant,
         _variant_name: &str,
         value: &T,
     ) -> Result<(), Self::Error> {
-        self.encode_u32(discriminant)?;
-        value.encode(self)
+        encode_discriminant(self, discriminant)?;
+        value.encode(&mut **self)
     }
+
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+fn encode_discriminant(enc: &mut SimpleBinaryEncoder, d: Discriminant) -> Result<(), String> {
+    match d {
+        Discriminant::U8(v) => enc.encode_u8(v),
+        Discriminant::U16(v) => enc.encode_u16(v),
+        Discriminant::U32(v) => enc.encode_u32(v),
+        Discriminant::U64(v) => enc.encode_u64(v),
+        Discriminant::U128(v) => enc.encode_u128(v),
+        Discriminant::Usize(v) => enc.encode_u64(v as u64),
+        Discriminant::I8(v) => enc.encode_i8(v),
+        Discriminant::I16(v) => enc.encode_i16(v),
+        Discriminant::I32(v) => enc.encode_i32(v),
+        Discriminant::I64(v) => enc.encode_i64(v),
+        Discriminant::I128(v) => enc.encode_i128(v),
+        Discriminant::Isize(v) => enc.encode_i64(v as i64),
+    }
+}
+
+impl SeqEncoder for &mut SimpleBinaryEncoder {
+    type Error = String;
+
+    fn encode_element<T: Encode>(&mut self, element: &T) -> Result<(), Self::Error> {
+        element.encode(&mut **self)
+    }
+
     fn end(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -164,12 +204,12 @@ impl EnumEncoder for SimpleBinaryEncoder {
 impl MapEncoder for &mut SimpleBinaryEncoder {
     type Error = String;
 
-    fn encode_key<T: Encode>(self, key: &T) -> Result<(), Self::Error> {
-        key.encode(self)
+    fn encode_key<T: Encode>(&mut self, key: &T) -> Result<(), Self::Error> {
+        key.encode(&mut **self)
     }
 
-    fn encode_value<T: Encode>(self, value: &T) -> Result<(), Self::Error> {
-        value.encode(self)
+    fn encode_value<T: Encode>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.encode(&mut **self)
     }
 
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -177,22 +217,25 @@ impl MapEncoder for &mut SimpleBinaryEncoder {
     }
 }
 
-impl SeqEncoder for SimpleBinaryEncoder {
+impl StructEncoder for &mut SimpleBinaryEncoder {
     type Error = String;
+
+    fn encode_field<T: Encode>(&mut self, _name: &str, value: &T) -> Result<(), Self::Error> {
+        value.encode(&mut **self)
+    }
+
+    fn end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl TupleEncoder for &mut SimpleBinaryEncoder {
+    type Error = String;
+
     fn encode_element<T: Encode>(&mut self, element: &T) -> Result<(), Self::Error> {
-        element.encode(self)
+        element.encode(&mut **self)
     }
 
-    fn end(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
-impl StructEncoder for SimpleBinaryEncoder {
-    type Error = String;
-    fn encode_field<T: Encode>(&mut self, _name: &str, _value: &T) -> Result<(), Self::Error> {
-        Ok(())
-    }
     fn end(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -204,10 +247,6 @@ fn main() {
     enc.encode_bool(true).unwrap();
     enc.encode_bytes(b"hello").unwrap();
 
-    let bytes = enc.into_bytes();
-    println!("Encoded {} bytes: {:?}", bytes.len(), bytes);
-    enc = SimpleBinaryEncoder::new();
-    enc.encode_byte_array(&[1, 2, 3]).unwrap();
     let bytes = enc.into_bytes();
     println!("Encoded {} bytes: {:?}", bytes.len(), bytes);
 }
