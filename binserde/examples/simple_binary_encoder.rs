@@ -107,10 +107,11 @@ impl Encoder for &mut SimpleBinaryEncoder {
             .map_err(|e| e.to_string())
     }
 
-    fn encode_some(self) -> Result<(), Self::Error> {
+    fn encode_some<T: Encode>(self, value: &T) -> Result<(), Self::Error> {
         self.output
             .write_all(&1u8.to_le_bytes())
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+        value.encode(self)
     }
 
     fn encode_none(self) -> Result<(), Self::Error> {
@@ -179,13 +180,13 @@ fn encode_discriminant(enc: &mut SimpleBinaryEncoder, d: Discriminant) -> Result
         Discriminant::U32(v) => enc.encode_u32(v),
         Discriminant::U64(v) => enc.encode_u64(v),
         Discriminant::U128(v) => enc.encode_u128(v),
-        Discriminant::Usize(v) => enc.encode_u64(v as u64),
+        Discriminant::USize(v) => enc.encode_u64(v as u64),
         Discriminant::I8(v) => enc.encode_i8(v),
         Discriminant::I16(v) => enc.encode_i16(v),
         Discriminant::I32(v) => enc.encode_i32(v),
         Discriminant::I64(v) => enc.encode_i64(v),
         Discriminant::I128(v) => enc.encode_i128(v),
-        Discriminant::Isize(v) => enc.encode_i64(v as i64),
+        Discriminant::ISize(v) => enc.encode_i64(v as i64),
     }
 }
 

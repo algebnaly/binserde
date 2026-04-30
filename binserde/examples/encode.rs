@@ -5,6 +5,7 @@ fn main() {
     let _ = MyEnum::Variant1;
 }
 
+#[allow(unused)]
 #[repr(u32)]
 enum MyEnum {
     Variant1 = 5,

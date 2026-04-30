@@ -25,7 +25,7 @@ pub trait Encoder {
     fn encode_f32(self, value: f32) -> Result<(), Self::Error>;
     fn encode_f64(self, value: f64) -> Result<(), Self::Error>;
 
-    fn encode_some(self) -> Result<(), Self::Error>;
+    fn encode_some<T: Encode>(self, value: &T) -> Result<(), Self::Error>;
     fn encode_none(self) -> Result<(), Self::Error>;
 
     fn encode_bytes(self, value: &[u8]) -> Result<(), Self::Error>;
@@ -50,13 +50,13 @@ pub enum Discriminant {
     U32(u32),
     U64(u64),
     U128(u128),
-    Usize(usize),
+    USize(usize),
     I8(i8),
     I16(i16),
     I32(i32),
     I64(i64),
     I128(i128),
-    Isize(isize),
+    ISize(isize),
 }
 
 pub trait EnumEncoder {

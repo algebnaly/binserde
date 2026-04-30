@@ -6,6 +6,7 @@ struct SimpleBinaryDecoder {
     pos: usize,
 }
 
+#[allow(unused)]
 impl SimpleBinaryDecoder {
     fn new(data: Vec<u8>) -> Self {
         SimpleBinaryDecoder {

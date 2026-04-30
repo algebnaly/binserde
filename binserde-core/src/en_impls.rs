@@ -1,4 +1,4 @@
-use crate::{Encode, Encoder, TupleEncoder};
+use crate::{Encode, Encoder, SeqEncoder, TupleEncoder};
 
 impl Encode for () {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), E::Error> {
@@ -11,66 +11,79 @@ impl Encode for bool {
         e.encode_bool(*self)
     }
 }
+
 impl Encode for u8 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_u8(*self)
     }
 }
+
 impl Encode for u16 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_u16(*self)
     }
 }
+
 impl Encode for u32 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_u32(*self)
     }
 }
+
 impl Encode for u64 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_u64(*self)
     }
 }
+
 impl Encode for u128 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_u128(*self)
     }
 }
+
 impl Encode for i8 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_i8(*self)
     }
 }
+
 impl Encode for i16 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_i16(*self)
     }
 }
+
 impl Encode for i32 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_i32(*self)
     }
 }
+
 impl Encode for i64 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_i64(*self)
     }
 }
+
 impl Encode for i128 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_i128(*self)
     }
 }
+
 impl Encode for f32 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_f32(*self)
     }
 }
+
 impl Encode for f64 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_f64(*self)
     }
 }
+
 impl Encode for str {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         e.encode_string(self)
@@ -83,29 +96,43 @@ impl Encode for String {
     }
 }
 
-impl<const N: usize> Encode for [u8; N] {
-    fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
-        e.encode_byte_array(self)
-    }
-}
-
 impl<T: Encode> Encode for Vec<T>
 where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
-        todo!()
+        let mut seq_encoder = e.encode_seq(Some(self.len()))?;
+        for item in self {
+            seq_encoder.encode_element(item)?;
+        }
+        seq_encoder.end()
     }
 }
 
 impl<T: Encode> Encode for Option<T> {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
         match self {
-            Some(v) => {
-                Ok(()) // TODO: fixes this
-            }
-            None => Ok(()),
+            Some(v) => e.encode_some(v),
+            None => e.encode_none(),
         }
+    }
+}
+
+impl<T: Encode + ?Sized> Encode for &T {
+    fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
+        (**self).encode(e)
+    }
+}
+
+impl<T: Encode + ?Sized> Encode for &mut T {
+    fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
+        (**self).encode(e)
+    }
+}
+
+impl<T: Encode> Encode for Box<T> {
+    fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
+        (**self).encode(e)
     }
 }
 

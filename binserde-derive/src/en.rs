@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{Attribute, Data, DeriveInput, parse_macro_input};
 
 pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -78,16 +78,13 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                         .fields
                         .iter()
                         .enumerate()
-                        .map(|(i, _)| {
-                            syn::Ident::new(&format!("_f{}", i), proc_macro2::Span::call_site())
-                        })
+                        .map(|(i, _)| format_ident!("_f{}", i))
                         .collect();
-                    let refs: Vec<_> = fields.iter().map(|f| quote! { & #f }).collect();
                     quote! {
-                        Self::#variant_name(#(ref #fields),*) => {
+                        Self::#variant_name(#(#fields),*) => {
                             let mut v = encoder.encode_variant()?;
                             binserde::EnumEncoder::encode_variant(
-                                &mut v, #disc, #variant_name_str, &(#(#refs),*),
+                                &mut v, #disc, #variant_name_str, &(#(#fields),*),
                             )?;
                             binserde::EnumEncoder::end(&mut v)
                         }
@@ -134,20 +131,20 @@ fn parse_repr(attrs: &[Attribute]) -> TokenStream {
                         "u32" => quote! { U32 },
                         "u64" => quote! { U64 },
                         "u128" => quote! { U128 },
-                        "usize" => quote! { Usize },
+                        "usize" => quote! { USize },
                         "i8" => quote! { I8 },
                         "i16" => quote! { I16 },
                         "i32" => quote! { I32 },
                         "i64" => quote! { I64 },
                         "i128" => quote! { I128 },
-                        "isize" => quote! { Isize },
+                        "isize" => quote! { ISize },
                         _ => continue,
                     };
                 }
             }
         }
     }
-    quote! { Usize }
+    quote! { USize }
 }
 
 fn discriminants_expr(discriminants: impl Iterator<Item = Option<syn::Expr>>) -> Vec<TokenStream> {
