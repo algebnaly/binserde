@@ -1,4 +1,3 @@
-// goal: define some reasonable default encode procedure, so that encoder did not to be too magic.
 pub trait Encode {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), E::Error>;
 }
@@ -24,8 +23,7 @@ pub trait Encoder {
     fn encode_f32(self, value: f32) -> Result<(), Self::Error>;
     fn encode_f64(self, value: f64) -> Result<(), Self::Error>;
 
-    fn encode_some<T: Encode>(self, value: &T) -> Result<(), Self::Error>;
-    fn encode_none(self) -> Result<(), Self::Error>;
+    fn encode_option<T: Encode>(self, value: Option<&T>) -> Result<(), Self::Error>;
 
     fn encode_bytes(self, value: &[u8]) -> Result<(), Self::Error>;
     fn encode_string(self, value: &str) -> Result<(), Self::Error>;

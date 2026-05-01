@@ -1,5 +1,6 @@
 pub use binserde_core::{
+    Discriminant,
     de::{Decode, Decoder, EnumDecoder, MapDecoder, SeqDecoder, StructDecoder, TupleDecoder},
-    en::{Discriminant, Encode, Encoder, MapEncoder, SeqEncoder, StructEncoder, TupleEncoder},
+    en::{Encode, Encoder, MapEncoder, SeqEncoder, StructEncoder, TupleEncoder},
 };
 pub use binserde_derive::{Decode, Encode};

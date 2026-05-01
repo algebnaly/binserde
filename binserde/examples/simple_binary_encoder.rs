@@ -106,17 +106,19 @@ impl Encoder for &mut SimpleBinaryEncoder {
             .map_err(|e| e.to_string())
     }
 
-    fn encode_some<T: Encode>(self, value: &T) -> Result<(), Self::Error> {
-        self.output
-            .write_all(&1u8.to_le_bytes())
-            .map_err(|e| e.to_string())?;
-        value.encode(self)
-    }
-
-    fn encode_none(self) -> Result<(), Self::Error> {
-        self.output
-            .write_all(&0u8.to_le_bytes())
-            .map_err(|e| e.to_string())
+    fn encode_option<T: Encode>(self, value: Option<&T>) -> Result<(), Self::Error> {
+        match value {
+            Some(v) => {
+                self.output
+                    .write_all(&1u8.to_le_bytes())
+                    .map_err(|e| e.to_string())?;
+                v.encode(self)
+            }
+            None => self
+                .output
+                .write_all(&0u8.to_le_bytes())
+                .map_err(|e| e.to_string()),
+        }
     }
 
     fn encode_bytes(self, value: &[u8]) -> Result<(), Self::Error> {

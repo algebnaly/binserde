@@ -29,8 +29,7 @@ pub trait Decoder {
     fn decode_string(self) -> Result<String, Self::Error>;
     fn decode_byte_array<const N: usize>(self) -> Result<[u8; N], Self::Error>;
 
-    fn decode_some(self) -> Result<(), Self::Error>;
-    fn decode_none(self) -> Result<(), Self::Error>;
+    fn decode_option<T: Decode>(self) -> Result<Option<T>, Self::Error>;
 
     fn decode_struct(self, name: &str, len: usize) -> Result<Self::StructDecoder, Self::Error>;
 
@@ -42,9 +41,21 @@ pub trait Decoder {
 
 pub trait EnumDecoder {
     type Error;
-    fn decode_variant<T: Decode>(
-        &mut self,
-    ) -> Result<(crate::en::Discriminant, String, T), Self::Error>;
+
+    fn decode_discriminant_u8(&mut self) -> Result<u8, Self::Error>;
+    fn decode_discriminant_u16(&mut self) -> Result<u16, Self::Error>;
+    fn decode_discriminant_u32(&mut self) -> Result<u32, Self::Error>;
+    fn decode_discriminant_u64(&mut self) -> Result<u64, Self::Error>;
+    fn decode_discriminant_u128(&mut self) -> Result<u128, Self::Error>;
+    fn decode_discriminant_usize(&mut self) -> Result<usize, Self::Error>;
+    fn decode_discriminant_i8(&mut self) -> Result<i8, Self::Error>;
+    fn decode_discriminant_i16(&mut self) -> Result<i16, Self::Error>;
+    fn decode_discriminant_i32(&mut self) -> Result<i32, Self::Error>;
+    fn decode_discriminant_i64(&mut self) -> Result<i64, Self::Error>;
+    fn decode_discriminant_i128(&mut self) -> Result<i128, Self::Error>;
+    fn decode_discriminant_isize(&mut self) -> Result<isize, Self::Error>;
+
+    fn decode_field<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
 }
 

@@ -111,10 +111,7 @@ where
 
 impl<T: Encode> Encode for Option<T> {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
-        match self {
-            Some(v) => e.encode_some(v),
-            None => e.encode_none(),
-        }
+        e.encode_option(self.as_ref())
     }
 }
 

@@ -27,6 +27,7 @@ impl SimpleBinaryDecoder {
 
 impl Decoder for &mut SimpleBinaryDecoder {
     type Error = String;
+
     type EnumDecoder = Self;
     type StructDecoder = Self;
     type SeqDecoder = Self;
@@ -115,20 +116,13 @@ impl Decoder for &mut SimpleBinaryDecoder {
         Ok(f64::from_le_bytes(buf))
     }
 
-    fn decode_some(self) -> Result<(), Self::Error> {
+    fn decode_option<T: binserde_core::Decode>(self) -> Result<Option<T>, Self::Error> {
         let tag = self.decode_u8()?;
-        if tag != 1 {
-            return Err("expected Some tag".to_string());
+        if tag == 0 {
+            Ok(None)
+        } else {
+            T::decode(self).map(Some)
         }
-        Ok(())
-    }
-
-    fn decode_none(self) -> Result<(), Self::Error> {
-        let tag = self.decode_u8()?;
-        if tag != 0 {
-            return Err("expected None tag".to_string());
-        }
-        Ok(())
     }
 
     fn decode_bytes(self) -> Result<Vec<u8>, Self::Error> {
@@ -170,14 +164,50 @@ impl Decoder for &mut SimpleBinaryDecoder {
     }
 }
 
-// Sub-decoder impls stubs — delegate back to Decoder methods
-
 impl EnumDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_variant<T: binserde_core::Decode>(
-        &mut self,
-    ) -> Result<(binserde_core::Discriminant, String, T), Self::Error> {
-        todo!("EnumDecoder::decode_variant")
+
+    fn decode_discriminant_u8(&mut self) -> Result<u8, Self::Error> {
+        self.decode_u8()
+    }
+    fn decode_discriminant_u16(&mut self) -> Result<u16, Self::Error> {
+        self.decode_u16()
+    }
+    fn decode_discriminant_u32(&mut self) -> Result<u32, Self::Error> {
+        self.decode_u32()
+    }
+    fn decode_discriminant_u64(&mut self) -> Result<u64, Self::Error> {
+        self.decode_u64()
+    }
+    fn decode_discriminant_u128(&mut self) -> Result<u128, Self::Error> {
+        self.decode_u128()
+    }
+    fn decode_discriminant_usize(&mut self) -> Result<usize, Self::Error> {
+        let v = self.decode_u64()?;
+        Ok(v as usize)
+    }
+    fn decode_discriminant_i8(&mut self) -> Result<i8, Self::Error> {
+        self.decode_i8()
+    }
+    fn decode_discriminant_i16(&mut self) -> Result<i16, Self::Error> {
+        self.decode_i16()
+    }
+    fn decode_discriminant_i32(&mut self) -> Result<i32, Self::Error> {
+        self.decode_i32()
+    }
+    fn decode_discriminant_i64(&mut self) -> Result<i64, Self::Error> {
+        self.decode_i64()
+    }
+    fn decode_discriminant_i128(&mut self) -> Result<i128, Self::Error> {
+        self.decode_i128()
+    }
+    fn decode_discriminant_isize(&mut self) -> Result<isize, Self::Error> {
+        let v = self.decode_i64()?;
+        Ok(v as isize)
+    }
+
+    fn decode_field<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
         Ok(())
@@ -290,5 +320,19 @@ mod tests {
         assert_eq!(test_struct.b, true);
         assert_eq!(test_struct.v_inner_struct.v_u32, 256);
         assert_eq!(test_struct.v_inner_struct.v_array, [0, 1, 2, 3]);
+    }
+
+    #[test]
+    fn test_decode_strucr_new_type() {
+        struct SNewType(String, u32);
+        impl Decode for SNewType {
+            fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
+                let mut s = decoder.decode_struct("SNewType", 2)?;
+                let field_string = s.decode_field::<String>()?;
+                let field_u32 = s.decode_field::<u32>()?;
+                s.end()?;
+                Ok(SNewType(field_string, field_u32))
+            }
+        }
     }
 }
