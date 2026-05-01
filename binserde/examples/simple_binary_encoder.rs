@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use binserde::{Discriminant, Encode, EnumEncoder, MapEncoder, SeqEncoder, StructEncoder};
+use binserde::{Discriminant, Encode, MapEncoder, SeqEncoder, StructEncoder};
 use binserde_core::en::{Encoder, TupleEncoder};
 
 struct SimpleBinaryEncoder {
@@ -19,7 +19,6 @@ impl SimpleBinaryEncoder {
 
 impl Encoder for &mut SimpleBinaryEncoder {
     type Error = String;
-    type EnumEncoder = Self;
     type MapEncoder = Self;
     type SeqEncoder = Self;
     type StructEncoder = Self;
@@ -137,9 +136,14 @@ impl Encoder for &mut SimpleBinaryEncoder {
         Ok(self)
     }
 
-    fn encode_variant(self) -> Result<Self::EnumEncoder, Self::Error> {
-        self.encode_u32(0)?;
-        Ok(self)
+    fn encode_variant<T: Encode>(
+        self,
+        _discriminant: Discriminant,
+        _variant_name: &str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        encode_discriminant(self, _discriminant)?;
+        value.encode(self)
     }
 
     fn encode_seq(self, _len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error> {
@@ -155,38 +159,20 @@ impl Encoder for &mut SimpleBinaryEncoder {
     }
 }
 
-impl EnumEncoder for &mut SimpleBinaryEncoder {
-    type Error = String;
-
-    fn encode_variant<T: Encode>(
-        &mut self,
-        discriminant: Discriminant,
-        _variant_name: &str,
-        value: &T,
-    ) -> Result<(), Self::Error> {
-        encode_discriminant(self, discriminant)?;
-        value.encode(&mut **self)
-    }
-
-    fn end(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
 fn encode_discriminant(enc: &mut SimpleBinaryEncoder, d: Discriminant) -> Result<(), String> {
     match d {
-        Discriminant::U8(v) => enc.encode_u8(v),
-        Discriminant::U16(v) => enc.encode_u16(v),
-        Discriminant::U32(v) => enc.encode_u32(v),
-        Discriminant::U64(v) => enc.encode_u64(v),
-        Discriminant::U128(v) => enc.encode_u128(v),
-        Discriminant::USize(v) => enc.encode_u64(v as u64),
-        Discriminant::I8(v) => enc.encode_i8(v),
-        Discriminant::I16(v) => enc.encode_i16(v),
-        Discriminant::I32(v) => enc.encode_i32(v),
-        Discriminant::I64(v) => enc.encode_i64(v),
-        Discriminant::I128(v) => enc.encode_i128(v),
-        Discriminant::ISize(v) => enc.encode_i64(v as i64),
+        Discriminant::U8(v) => enc.encode_u128(v as u128),
+        Discriminant::U16(v) => enc.encode_u128(v as u128),
+        Discriminant::U32(v) => enc.encode_u128(v as u128),
+        Discriminant::U64(v) => enc.encode_u128(v as u128),
+        Discriminant::U128(v) => enc.encode_u128(v as u128),
+        Discriminant::USize(v) => enc.encode_u128(v as u128),
+        Discriminant::I8(v) => enc.encode_u128(v as u128),
+        Discriminant::I16(v) => enc.encode_u128(v as u128),
+        Discriminant::I32(v) => enc.encode_u128(v as u128),
+        Discriminant::I64(v) => enc.encode_u128(v as u128),
+        Discriminant::I128(v) => enc.encode_u128(v as u128),
+        Discriminant::ISize(v) => enc.encode_u128(v as u128),
     }
 }
 

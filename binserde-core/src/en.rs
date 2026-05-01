@@ -5,7 +5,6 @@ pub trait Encode {
 
 pub trait Encoder {
     type Error;
-    type EnumEncoder: EnumEncoder<Error = Self::Error>;
     type StructEncoder: StructEncoder<Error = Self::Error>;
     type SeqEncoder: SeqEncoder<Error = Self::Error>;
     type MapEncoder: MapEncoder<Error = Self::Error>;
@@ -35,7 +34,12 @@ pub trait Encoder {
 
     fn encode_struct(self, name: &str, len: usize) -> Result<Self::StructEncoder, Self::Error>;
 
-    fn encode_variant(self) -> Result<Self::EnumEncoder, Self::Error>;
+    fn encode_variant<T: Encode>(
+        self,
+        discriminant: Discriminant,
+        variant_name: &str,
+        value: &T,
+    ) -> Result<(), Self::Error>;
 
     fn encode_seq(self, len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error>;
 
@@ -57,17 +61,6 @@ pub enum Discriminant {
     I64(i64),
     I128(i128),
     ISize(isize),
-}
-
-pub trait EnumEncoder {
-    type Error;
-    fn encode_variant<T: Encode>(
-        &mut self,
-        discriminant: Discriminant,
-        variant_name: &str,
-        value: &T,
-    ) -> Result<(), Self::Error>;
-    fn end(&mut self) -> Result<(), Self::Error>;
 }
 
 pub trait StructEncoder {

@@ -65,11 +65,9 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                 syn::Fields::Unit => {
                     quote! {
                         Self::#variant_name => {
-                            let mut v = encoder.encode_variant()?;
-                            binserde::EnumEncoder::encode_variant(
-                                &mut v, #disc, #variant_name_str, &(),
-                            )?;
-                            binserde::EnumEncoder::end(&mut v)
+                            encoder.encode_variant(
+                                #disc, #variant_name_str, &(),
+                            )
                         }
                     }
                 }
@@ -82,11 +80,9 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                         .collect();
                     quote! {
                         Self::#variant_name(#(#fields),*) => {
-                            let mut v = encoder.encode_variant()?;
-                            binserde::EnumEncoder::encode_variant(
-                                &mut v, #disc, #variant_name_str, &(#(#fields),*),
-                            )?;
-                            binserde::EnumEncoder::end(&mut v)
+                            encoder.encode_variant(
+                                #disc, #variant_name_str, &(#(#fields),*),
+                            )
                         }
                     }
                 }
@@ -99,11 +95,7 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                     let refs: Vec<_> = field_names.iter().map(|n| quote! { & #n }).collect();
                     quote! {
                         Self::#variant_name { #(#field_names),* } => {
-                            let mut v = encoder.encode_variant()?;
-                            binserde::EnumEncoder::encode_variant(
-                                &mut v, #disc, #variant_name_str, &(#(#refs),*),
-                            )?;
-                            binserde::EnumEncoder::end(&mut v)
+                            encoder.encode_variant(#disc, #variant_name_str,&(#(#refs),*))
                         }
                     }
                 }

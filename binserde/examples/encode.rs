@@ -1,4 +1,4 @@
-use binserde::{Discriminant, Encode, Encoder, EnumEncoder};
+use binserde::{Discriminant, Encode, Encoder};
 
 fn main() {
     // Example showing manual enum encoding with the Discriminant enum
@@ -16,20 +16,12 @@ enum MyEnum {
 impl Encode for MyEnum {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), E::Error> {
         match self {
-            MyEnum::Variant1 => {
-                let mut v = encoder.encode_variant()?;
-                EnumEncoder::encode_variant(&mut v, Discriminant::U32(5), "Variant1", &())?;
-                v.end()
-            }
+            MyEnum::Variant1 => encoder.encode_variant(Discriminant::U32(5), "Variant1", &()),
             MyEnum::Variant2(value) => {
-                let mut v = encoder.encode_variant()?;
-                EnumEncoder::encode_variant(&mut v, Discriminant::U32(16), "Variant2", value)?;
-                v.end()
+                encoder.encode_variant(Discriminant::U32(16), "Variant2", value)
             }
             MyEnum::Variant3(value) => {
-                let mut v = encoder.encode_variant()?;
-                EnumEncoder::encode_variant(&mut v, Discriminant::U32(41), "Variant3", value)?;
-                v.end()
+                encoder.encode_variant(Discriminant::U32(41), "Variant3", value)
             }
         }
     }
