@@ -2,6 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, parse_macro_input};
 
+#[allow(unused)]
 const CATCH_ALL_ATTR_NAME: &str = "catch_all";
 
 pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -51,6 +52,6 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     }
 }
 
-fn decode_impl_for_enum(d_enum: syn::DataEnum) -> TokenStream {
+fn decode_impl_for_enum(_d_enum: syn::DataEnum) -> TokenStream {
     quote! { todo!("enum Decode not yet implemented") }
 }

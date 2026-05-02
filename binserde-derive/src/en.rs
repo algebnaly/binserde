@@ -56,7 +56,6 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
         .zip(disc_exprs.iter())
         .map(|(variant, disc_expr)| {
             let variant_name = &variant.ident;
-            let variant_name_str = variant_name.to_string();
             let disc = quote! { binserde::Discriminant::#disc_variant(#disc_expr) };
 
             match &variant.fields {
@@ -64,7 +63,7 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                     quote! {
                         Self::#variant_name => {
                             encoder.encode_variant(
-                                #disc, #variant_name_str, &(),
+                                #disc, &(),
                             )
                         }
                     }
@@ -79,7 +78,7 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                     quote! {
                         Self::#variant_name(#(#fields),*) => {
                             encoder.encode_variant(
-                                #disc, #variant_name_str, &(#(#fields),*),
+                                #disc, &(#(#fields),*),
                             )
                         }
                     }
@@ -93,7 +92,7 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                     let refs: Vec<_> = field_names.iter().map(|n| quote! { & #n }).collect();
                     quote! {
                         Self::#variant_name { #(#field_names),* } => {
-                            encoder.encode_variant(#disc, #variant_name_str,&(#(#refs),*))
+                            encoder.encode_variant(#disc, &(#(#refs),*))
                         }
                     }
                 }
