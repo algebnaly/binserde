@@ -1,4 +1,4 @@
-use crate::{Decode, Decoder, TupleDecoder};
+use crate::{Decode, Decoder, SeqDecoder, TupleDecoder};
 
 impl Decode for () {
     fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
@@ -77,24 +77,24 @@ impl Decode for String {
     }
 }
 
-impl<const N: usize> Decode for [u8; N] {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
-        decoder.decode_byte_array::<N>()
-    }
-}
-
 impl<T: Decode> Decode for Vec<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(_decoder: D) -> Result<Self, D::Error> {
-        todo!()
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
+        let mut seq_decoder = decoder.decode_seq()?;
+        let len = seq_decoder.decode_len()?;
+        let mut buf = Vec::new();
+        for _ in 0..len {
+            buf.push(seq_decoder.decode_element()?);
+        }
+        Ok(buf)
     }
 }
 
 impl<T: Decode> Decode for Option<T> {
-    fn decode<D: Decoder>(_decoder: D) -> Result<Self, D::Error> {
-        Ok(None)
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
+        decoder.decode_option()
     }
 }
 

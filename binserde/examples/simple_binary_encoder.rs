@@ -148,11 +148,11 @@ impl Encoder for &mut SimpleBinaryEncoder {
         value.encode(self)
     }
 
-    fn encode_seq(self, _len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error> {
+    fn encode_seq(self, _len: usize) -> Result<Self::SeqEncoder, Self::Error> {
         Ok(self)
     }
 
-    fn encode_map(self, _len: Option<usize>) -> Result<Self::MapEncoder, Self::Error> {
+    fn encode_map(self, _len: usize) -> Result<Self::MapEncoder, Self::Error> {
         Ok(self)
     }
 

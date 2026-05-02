@@ -34,8 +34,8 @@ pub trait Decoder {
     fn decode_struct(self, name: &str, len: usize) -> Result<Self::StructDecoder, Self::Error>;
 
     fn decode_variant(self) -> Result<Self::EnumDecoder, Self::Error>;
-    fn decode_seq(self, len: Option<usize>) -> Result<Self::SeqDecoder, Self::Error>;
-    fn decode_map(self, len: Option<usize>) -> Result<Self::MapDecoder, Self::Error>;
+    fn decode_seq(self) -> Result<Self::SeqDecoder, Self::Error>;
+    fn decode_map(self) -> Result<Self::MapDecoder, Self::Error>;
     fn decode_tuple(self, len: usize) -> Result<Self::TupleDecoder, Self::Error>;
 }
 
@@ -67,12 +67,16 @@ pub trait StructDecoder {
 
 pub trait SeqDecoder {
     type Error;
-    fn decode_element<T: Decode>(&mut self) -> Result<Option<T>, Self::Error>;
+    fn decode_len(&mut self) -> Result<usize, Self::Error>;
+    fn decode_element<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
 }
 
 pub trait MapDecoder {
     type Error;
+    fn decode_length(&mut self) -> Result<usize, Self::Error> {
+        unimplemented!()
+    }
     fn decode_key<T: Decode>(&mut self) -> Result<Option<T>, Self::Error>;
     fn decode_value<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
@@ -80,6 +84,9 @@ pub trait MapDecoder {
 
 pub trait TupleDecoder {
     type Error;
+    fn decode_length(&mut self) -> Result<usize, Self::Error> {
+        unimplemented!()
+    }
     fn decode_element<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
 }

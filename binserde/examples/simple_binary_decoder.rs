@@ -151,11 +151,11 @@ impl Decoder for &mut SimpleBinaryDecoder {
         Ok(self)
     }
 
-    fn decode_seq(self, _len: Option<usize>) -> Result<Self::SeqDecoder, Self::Error> {
+    fn decode_seq(self) -> Result<Self::SeqDecoder, Self::Error> {
         Ok(self)
     }
 
-    fn decode_map(self, _len: Option<usize>) -> Result<Self::MapDecoder, Self::Error> {
+    fn decode_map(self) -> Result<Self::MapDecoder, Self::Error> {
         Ok(self)
     }
 
@@ -226,8 +226,12 @@ impl StructDecoder for &mut SimpleBinaryDecoder {
 
 impl SeqDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<Option<T>, Self::Error> {
-        todo!("SeqDecoder::decode_element")
+    fn decode_len(&mut self) -> Result<usize, Self::Error> {
+        let v = self.decode_u32()?;
+        Ok(v as usize)
+    }
+    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
         Ok(())

@@ -101,7 +101,7 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, e: E) -> Result<(), E::Error> {
-        let mut seq_encoder = e.encode_seq(Some(self.len()))?;
+        let mut seq_encoder = e.encode_seq(self.len())?;
         for item in self {
             seq_encoder.encode_element(item)?;
         }

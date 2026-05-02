@@ -39,9 +39,9 @@ pub trait Encoder {
         value: &T,
     ) -> Result<(), Self::Error>;
 
-    fn encode_seq(self, len: Option<usize>) -> Result<Self::SeqEncoder, Self::Error>;
+    fn encode_seq(self, len: usize) -> Result<Self::SeqEncoder, Self::Error>;
 
-    fn encode_map(self, len: Option<usize>) -> Result<Self::MapEncoder, Self::Error>;
+    fn encode_map(self, len: usize) -> Result<Self::MapEncoder, Self::Error>;
 
     fn encode_tuple(self, len: usize) -> Result<Self::TupleEncoder, Self::Error>;
 }
