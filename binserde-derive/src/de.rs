@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, parse_macro_input};
 
+const CATCH_ALL_ATTR_NAME: &str = "catch_all";
+
 pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     let name = &derive_input.ident;
@@ -21,10 +23,6 @@ pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::
       }
     };
     proc_macro::TokenStream::from(impl_block)
-}
-
-fn decode_impl_for_enum(_d_enum: syn::DataEnum) -> TokenStream {
-    quote! { todo!("enum Decode not yet implemented") }
 }
 
 fn decode_impl_for_struct(d_struct: syn::DataStruct, name: &syn::Ident) -> TokenStream {
@@ -52,4 +50,8 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct, name: &syn::Ident) -> Token
         binserde::StructDecoder::end(&mut s)?;
         Ok(Self { #( #field_idents ),* })
     }
+}
+
+fn decode_impl_for_enum(_d_enum: syn::DataEnum) -> TokenStream {
+    quote! { todo!("enum Decode not yet implemented") }
 }

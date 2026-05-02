@@ -10,7 +10,7 @@ pub fn derive_encode(input: TokenStream) -> TokenStream {
     derive_encode_impl(input)
 }
 
-#[proc_macro_derive(Decode)]
+#[proc_macro_derive(Decode, attributes(binserde))]
 pub fn derive_decode(input: TokenStream) -> TokenStream {
     derive_decode_impl(input)
 }
