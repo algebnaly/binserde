@@ -9,7 +9,7 @@ pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::
     let name = &derive_input.ident;
 
     let expanded = match derive_input.data {
-        Data::Struct(d_struct) => decode_impl_for_struct(d_struct, name),
+        Data::Struct(d_struct) => decode_impl_for_struct(d_struct),
         Data::Enum(d_enum) => decode_impl_for_enum(d_enum),
         Data::Union(_d_union) => {
             unimplemented!("Union types are not supported yet")
@@ -25,9 +25,8 @@ pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::
     proc_macro::TokenStream::from(impl_block)
 }
 
-fn decode_impl_for_struct(d_struct: syn::DataStruct, name: &syn::Ident) -> TokenStream {
+fn decode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     let field_count = d_struct.fields.iter().count();
-    let struct_name = name.to_string();
 
     let field_names: Vec<_> = d_struct
         .fields
@@ -45,13 +44,13 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct, name: &syn::Ident) -> Token
     });
 
     quote! {
-        let mut s = decoder.decode_struct(#struct_name, #field_count)?;
+        let mut s = decoder.decode_struct(#field_count)?;
         #( #decode_fields )*
         binserde::StructDecoder::end(&mut s)?;
         Ok(Self { #( #field_idents ),* })
     }
 }
 
-fn decode_impl_for_enum(_d_enum: syn::DataEnum) -> TokenStream {
+fn decode_impl_for_enum(d_enum: syn::DataEnum) -> TokenStream {
     quote! { todo!("enum Decode not yet implemented") }
 }

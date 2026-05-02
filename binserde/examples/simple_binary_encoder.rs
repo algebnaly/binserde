@@ -134,14 +134,13 @@ impl Encoder for &mut SimpleBinaryEncoder {
         self.output.write_all(value).map_err(|e| e.to_string())
     }
 
-    fn encode_struct(self, _name: &str, _len: usize) -> Result<Self::StructEncoder, Self::Error> {
+    fn encode_struct(self, _len: usize) -> Result<Self::StructEncoder, Self::Error> {
         Ok(self)
     }
 
     fn encode_variant<T: Encode>(
         self,
         _discriminant: Discriminant,
-        _variant_name: &str,
         value: &T,
     ) -> Result<(), Self::Error> {
         encode_discriminant(self, _discriminant)?;

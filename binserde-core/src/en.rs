@@ -30,12 +30,11 @@ pub trait Encoder {
 
     fn encode_byte_array<const N: usize>(self, value: &[u8; N]) -> Result<(), Self::Error>;
 
-    fn encode_struct(self, name: &str, len: usize) -> Result<Self::StructEncoder, Self::Error>;
+    fn encode_struct(self, len: usize) -> Result<Self::StructEncoder, Self::Error>;
 
     fn encode_variant<T: Encode>(
         self,
         discriminant: Discriminant,
-        variant_name: &str,
         value: &T,
     ) -> Result<(), Self::Error>;
 

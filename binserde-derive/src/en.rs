@@ -7,7 +7,7 @@ pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::
     let name = &derive_input.ident;
 
     let expanded = match derive_input.data {
-        Data::Struct(d_struct) => encode_impl_for_struct(d_struct, name),
+        Data::Struct(d_struct) => encode_impl_for_struct(d_struct),
         Data::Enum(d_enum) => encode_impl_for_enum(d_enum, &derive_input.attrs),
         Data::Union(_d_union) => {
             unimplemented!("Union types are not supported yet")
@@ -24,20 +24,18 @@ pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::
     proc_macro::TokenStream::from(impl_block)
 }
 
-fn encode_impl_for_struct(d_struct: syn::DataStruct, name: &syn::Ident) -> TokenStream {
+fn encode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     let field_count = d_struct.fields.iter().count();
-    let struct_name = name.to_string();
 
     let encode_fields = d_struct.fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
-        let field_name_str = field_name.to_string();
         quote! {
-            binserde::StructEncoder::encode_field(&mut s, #field_name_str, &self.#field_name)?;
+            binserde::StructEncoder::encode_field(&mut s, &self.#field_name)?;
         }
     });
 
     quote! {
-        let mut s = encoder.encode_struct(#struct_name, #field_count)?;
+        let mut s = encoder.encode_struct(#field_count)?;
         #( #encode_fields )*
         binserde::StructEncoder::end(&mut s)
     }

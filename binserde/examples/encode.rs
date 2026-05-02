@@ -16,13 +16,9 @@ enum MyEnum {
 impl Encode for MyEnum {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), E::Error> {
         match self {
-            MyEnum::Variant1 => encoder.encode_variant(Discriminant::U32(5), "Variant1", &()),
-            MyEnum::Variant2(value) => {
-                encoder.encode_variant(Discriminant::U32(16), "Variant2", value)
-            }
-            MyEnum::Variant3(value) => {
-                encoder.encode_variant(Discriminant::U32(41), "Variant3", value)
-            }
+            MyEnum::Variant1 => encoder.encode_variant(Discriminant::U32(5), &()),
+            MyEnum::Variant2(value) => encoder.encode_variant(Discriminant::U32(16), value),
+            MyEnum::Variant3(value) => encoder.encode_variant(Discriminant::U32(41), value),
         }
     }
 }

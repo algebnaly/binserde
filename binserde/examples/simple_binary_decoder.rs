@@ -143,7 +143,7 @@ impl Decoder for &mut SimpleBinaryDecoder {
         Ok(buf)
     }
 
-    fn decode_struct(self, _name: &str, _len: usize) -> Result<Self::StructDecoder, Self::Error> {
+    fn decode_struct(self, _len: usize) -> Result<Self::StructDecoder, Self::Error> {
         Ok(self)
     }
 
@@ -288,7 +288,7 @@ mod tests {
 
         impl Decode for InnerStruct {
             fn decode<D: Decoder>(dec: D) -> Result<Self, D::Error> {
-                let mut s = dec.decode_struct("InnerStruct", 2)?;
+                let mut s = dec.decode_struct(2)?;
                 let v_u32 = StructDecoder::decode_field::<u32>(&mut s)?;
                 let v_array = StructDecoder::decode_field::<[u8; 4]>(&mut s)?;
                 StructDecoder::end(&mut s)?;
@@ -298,7 +298,7 @@ mod tests {
 
         impl Decode for TestStruct {
             fn decode<D: Decoder>(dec: D) -> Result<Self, D::Error> {
-                let mut s = dec.decode_struct("TestStruct", 3)?;
+                let mut s = dec.decode_struct(3)?;
                 let v_i32 = StructDecoder::decode_field::<i32>(&mut s)?;
                 let b = StructDecoder::decode_field::<bool>(&mut s)?;
                 let v_inner_struct = StructDecoder::decode_field::<InnerStruct>(&mut s)?;
@@ -331,7 +331,7 @@ mod tests {
         struct SNewType(String, u32);
         impl Decode for SNewType {
             fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
-                let mut s = decoder.decode_struct("SNewType", 2)?;
+                let mut s = decoder.decode_struct(2)?;
                 let field_string = s.decode_field::<String>()?;
                 let field_u32 = s.decode_field::<u32>()?;
                 s.end()?;

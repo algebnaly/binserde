@@ -31,7 +31,7 @@ pub trait Decoder {
 
     fn decode_option<T: Decode>(self) -> Result<Option<T>, Self::Error>;
 
-    fn decode_struct(self, name: &str, len: usize) -> Result<Self::StructDecoder, Self::Error>;
+    fn decode_struct(self, len: usize) -> Result<Self::StructDecoder, Self::Error>;
 
     fn decode_variant(self) -> Result<Self::EnumDecoder, Self::Error>;
     fn decode_seq(self) -> Result<Self::SeqDecoder, Self::Error>;
