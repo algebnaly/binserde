@@ -1,9 +1,9 @@
-use binserde::Encode;
+use binserde::{Decode, Encode};
 
 fn main() {}
 
 #[allow(unused)]
-#[derive(Encode)]
+#[derive(Encode, Decode)]
 #[repr(u32)]
 enum MyEnum {
     Variant1 = 5,

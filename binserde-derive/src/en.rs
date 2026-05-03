@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Attribute, Data, DeriveInput, parse_macro_input};
 
+use crate::enum_helper::{discriminants_expr, parse_repr};
+
 pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     let name = &derive_input.ident;
@@ -106,64 +108,3 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
     }
 }
 
-fn parse_repr(attrs: &[Attribute]) -> TokenStream {
-    for attr in attrs {
-        if !attr.path().is_ident("repr") {
-            continue;
-        }
-        if let Ok(ty) = attr.parse_args::<syn::Type>() {
-            if let syn::Type::Path(type_path) = &ty {
-                if let Some(ident) = type_path.path.get_ident() {
-                    return match ident.to_string().as_str() {
-                        "u8" => quote! { U8 },
-                        "u16" => quote! { U16 },
-                        "u32" => quote! { U32 },
-                        "u64" => quote! { U64 },
-                        "u128" => quote! { U128 },
-                        "usize" => quote! { USize },
-                        "i8" => quote! { I8 },
-                        "i16" => quote! { I16 },
-                        "i32" => quote! { I32 },
-                        "i64" => quote! { I64 },
-                        "i128" => quote! { I128 },
-                        "isize" => quote! { ISize },
-                        _ => continue,
-                    };
-                }
-            }
-        }
-    }
-    quote! { USize }
-}
-
-fn discriminants_expr(discriminants: impl Iterator<Item = Option<syn::Expr>>) -> Vec<TokenStream> {
-    enum State {
-        Value(usize),
-        Expr(TokenStream),
-    }
-
-    let mut current = State::Value(0);
-    let mut result = Vec::new();
-
-    for disc in discriminants {
-        match disc {
-            Some(expr) => {
-                result.push(quote! { #expr });
-                current = State::Expr(quote! { #expr + 1 });
-            }
-            None => match &current {
-                State::Value(v) => {
-                    let lit = syn::LitInt::new(&v.to_string(), proc_macro2::Span::call_site());
-                    result.push(quote! { #lit });
-                    current = State::Value(v + 1);
-                }
-                State::Expr(e) => {
-                    result.push(quote! { #e });
-                    current = State::Expr(quote! { #e + 1 });
-                }
-            },
-        }
-    }
-
-    result
-}

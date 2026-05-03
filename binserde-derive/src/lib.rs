@@ -4,6 +4,7 @@ use crate::{de::derive_decode_impl, en::derive_encode_impl};
 
 mod de;
 mod en;
+mod enum_helper;
 
 #[proc_macro_derive(Encode)]
 pub fn derive_encode(input: TokenStream) -> TokenStream {
