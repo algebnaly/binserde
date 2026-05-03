@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Attribute, Data, DeriveInput, Error as SynError, parse_macro_input};
+use syn::{Attribute, Data, DeriveInput, Error as SynError, Fields, parse_macro_input};
 
 use crate::enum_helper::{DiscriminantType, discriminants_expr, parse_repr_type};
 
@@ -83,7 +83,7 @@ fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
     let disc_exprs = discriminants_expr(discriminants);
 
     let create_enum_decoder_expr = quote! {
-        let enum_decoder = ::binserde::Decoder::decode_variant(decoder)?;
+        let mut enum_decoder = ::binserde::Decoder::decode_variant(decoder)?;
     };
 
     let decode_discriminant_expr = match discriminant_type {
@@ -148,22 +148,27 @@ fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
             }
         }
     };
-    let decode_expr = d_enum
+    let decode_exprs = d_enum
         .variants
         .iter()
         .zip(disc_exprs)
         .map(|(v, disc_expr)| {
+            match &v.fields {
+                Fields::Unit => {}
+                Fields::Unnamed(fields) => {}
+                Fields::Named(fields) => {}
+            }
             quote! {
-                _ if #disc_expr == disc_val {
-                    
+                _ if #disc_expr == disc_val => {
+                    ::binserde::EnumDecoder::decode_field(&mut enum_decoder);
                 }
             }
         });
     quote! {
         #create_enum_decoder_expr
         #decode_discriminant_expr
-        if {
-
+        match disc_val {
+            #( #decode_exprs)*
         }
     }
 }
