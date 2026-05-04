@@ -208,7 +208,7 @@ impl MapEncoder for &mut SimpleBinaryEncoder {
 impl StructEncoder for &mut SimpleBinaryEncoder {
     type Error = String;
 
-    fn encode_field<T: Encode>(&mut self, _name: &str, value: &T) -> Result<(), Self::Error> {
+    fn encode_field<T: Encode>(&mut self, value: &T) -> Result<(), Self::Error> {
         value.encode(&mut **self)
     }
 

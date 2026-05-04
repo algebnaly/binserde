@@ -212,6 +212,10 @@ impl EnumDecoder for &mut SimpleBinaryDecoder {
     fn end(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    fn on_unknown_discriminant(&mut self, discriminant: impl std::fmt::Display) -> Self::Error {
+        format!("unknown variant discriminant: {}", discriminant)
+    }
 }
 
 impl StructDecoder for &mut SimpleBinaryDecoder {

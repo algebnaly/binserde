@@ -57,6 +57,8 @@ pub trait EnumDecoder {
 
     fn decode_field<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
+
+    fn on_unknown_discriminant(&mut self, discriminant: impl std::fmt::Display) -> Self::Error;
 }
 
 pub trait StructDecoder {

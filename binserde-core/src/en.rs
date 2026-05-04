@@ -62,7 +62,7 @@ pub enum Discriminant {
 
 pub trait StructEncoder {
     type Error;
-    fn encode_field<T: Encode>(&mut self, name: &str, value: &T) -> Result<(), Self::Error>;
+    fn encode_field<T: Encode>(&mut self, value: &T) -> Result<(), Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
 }
 

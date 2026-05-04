@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::Attribute;
+use syn::{Attribute, Ident};
 
 pub(crate) enum DiscriminantType {
     U8,
@@ -15,6 +15,45 @@ pub(crate) enum DiscriminantType {
     I64,
     I128,
     ISize,
+}
+
+pub(crate) fn is_catch_all_attr(attr: &Attribute) -> bool {
+    attr.path().is_ident("binserde")
+        && attr
+            .parse_args::<Ident>()
+            .ok()
+            .map(|i| i == "catch_all")
+            .unwrap_or(false)
+}
+
+pub(crate) fn is_catch_all_variant(variant: &syn::Variant) -> bool {
+    variant.attrs.iter().any(|a| is_catch_all_attr(a))
+}
+
+pub(crate) fn type_matches_discriminant(ty: &syn::Type, disc_type: &DiscriminantType) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(ident) = type_path.path.get_ident() {
+            return ident == discriminant_type_name(disc_type);
+        }
+    }
+    false
+}
+
+pub(crate) fn discriminant_type_name(disc_type: &DiscriminantType) -> &str {
+    match disc_type {
+        DiscriminantType::U8 => "u8",
+        DiscriminantType::U16 => "u16",
+        DiscriminantType::U32 => "u32",
+        DiscriminantType::U64 => "u64",
+        DiscriminantType::U128 => "u128",
+        DiscriminantType::USize => "usize",
+        DiscriminantType::I8 => "i8",
+        DiscriminantType::I16 => "i16",
+        DiscriminantType::I32 => "i32",
+        DiscriminantType::I64 => "i64",
+        DiscriminantType::I128 => "i128",
+        DiscriminantType::ISize => "isize",
+    }
 }
 
 pub(crate) fn parse_repr_type(attrs: &[Attribute]) -> Option<DiscriminantType> {
