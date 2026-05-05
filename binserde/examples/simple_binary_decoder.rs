@@ -244,8 +244,8 @@ impl SeqDecoder for &mut SimpleBinaryDecoder {
 
 impl MapDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_key<T: binserde_core::Decode>(&mut self) -> Result<Option<T>, Self::Error> {
-        todo!("MapDecoder::decode_key")
+    fn decode_key<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+        T::decode(&mut **self)
     }
     fn decode_value<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)

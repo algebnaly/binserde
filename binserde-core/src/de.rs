@@ -42,18 +42,42 @@ pub trait Decoder {
 pub trait EnumDecoder {
     type Error;
 
-    fn decode_discriminant_u8(&mut self) -> Result<u8, Self::Error>;
-    fn decode_discriminant_u16(&mut self) -> Result<u16, Self::Error>;
-    fn decode_discriminant_u32(&mut self) -> Result<u32, Self::Error>;
-    fn decode_discriminant_u64(&mut self) -> Result<u64, Self::Error>;
-    fn decode_discriminant_u128(&mut self) -> Result<u128, Self::Error>;
-    fn decode_discriminant_usize(&mut self) -> Result<usize, Self::Error>;
-    fn decode_discriminant_i8(&mut self) -> Result<i8, Self::Error>;
-    fn decode_discriminant_i16(&mut self) -> Result<i16, Self::Error>;
-    fn decode_discriminant_i32(&mut self) -> Result<i32, Self::Error>;
-    fn decode_discriminant_i64(&mut self) -> Result<i64, Self::Error>;
-    fn decode_discriminant_i128(&mut self) -> Result<i128, Self::Error>;
-    fn decode_discriminant_isize(&mut self) -> Result<isize, Self::Error>;
+    fn decode_discriminant_u8(&mut self) -> Result<u8, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_u16(&mut self) -> Result<u16, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_u32(&mut self) -> Result<u32, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_u64(&mut self) -> Result<u64, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_u128(&mut self) -> Result<u128, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_usize(&mut self) -> Result<usize, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_i8(&mut self) -> Result<i8, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_i16(&mut self) -> Result<i16, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_i32(&mut self) -> Result<i32, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_i64(&mut self) -> Result<i64, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_i128(&mut self) -> Result<i128, Self::Error> {
+        unimplemented!()
+    }
+    fn decode_discriminant_isize(&mut self) -> Result<isize, Self::Error> {
+        unimplemented!()
+    }
 
     fn decode_field<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
@@ -79,7 +103,7 @@ pub trait MapDecoder {
     fn decode_length(&mut self) -> Result<usize, Self::Error> {
         unimplemented!()
     }
-    fn decode_key<T: Decode>(&mut self) -> Result<Option<T>, Self::Error>;
+    fn decode_key<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn decode_value<T: Decode>(&mut self) -> Result<T, Self::Error>;
     fn end(&mut self) -> Result<(), Self::Error>;
 }

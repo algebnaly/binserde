@@ -6,7 +6,7 @@ mod de;
 mod en;
 mod enum_helper;
 
-#[proc_macro_derive(Encode)]
+#[proc_macro_derive(Encode, attributes(binserde))]
 pub fn derive_encode(input: TokenStream) -> TokenStream {
     derive_encode_impl(input)
 }

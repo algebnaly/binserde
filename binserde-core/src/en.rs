@@ -8,6 +8,7 @@ pub trait Encoder {
     type SeqEncoder: SeqEncoder<Error = Self::Error>;
     type MapEncoder: MapEncoder<Error = Self::Error>;
     type TupleEncoder: TupleEncoder<Error = Self::Error>;
+    // TODO: add enumEncoder, and move Discriminant to binserde/derive
     fn encode_unit(self) -> Result<(), Self::Error>;
     fn encode_bool(self, value: bool) -> Result<(), Self::Error>;
     fn encode_u8(self, value: u8) -> Result<(), Self::Error>;

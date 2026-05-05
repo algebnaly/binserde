@@ -13,12 +13,18 @@ pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::
     let attrs = &derive_input.attrs;
 
     let expanded = match derive_input.data {
-        Data::Struct(d_struct) => decode_impl_for_struct(d_struct),
+        Data::Struct(d_struct) => Ok(decode_impl_for_struct(d_struct)),
         Data::Enum(d_enum) => decode_impl_for_enum(d_enum, attrs),
         Data::Union(_d_union) => {
             unimplemented!("Union types are not supported yet")
         }
     };
+
+    let expanded = match expanded {
+        Ok(tokens) => tokens,
+        Err(e) => return proc_macro::TokenStream::from(e.into_compile_error()),
+    };
+
     let impl_block = quote! {
       impl ::binserde::Decode for #name {
           fn decode<D: ::binserde::Decoder>(decoder: D) -> Result<Self, D::Error> {
@@ -80,7 +86,10 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     }
 }
 
-fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStream {
+fn decode_impl_for_enum(
+    d_enum: syn::DataEnum,
+    attrs: &[Attribute],
+) -> Result<TokenStream, SynError> {
     let discriminant_type = parse_repr_type(attrs).unwrap_or(DiscriminantType::USize);
 
     let catch_all_count = d_enum
@@ -96,11 +105,10 @@ fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
             .filter(|v| is_catch_all_variant(v))
             .nth(1)
             .unwrap();
-        return SynError::new(
+        return Err(SynError::new(
             second.ident.span(),
             "only one #[binserde(catch_all)] variant is allowed",
-        )
-        .into_compile_error();
+        ));
     }
 
     let discriminants = d_enum
@@ -124,7 +132,7 @@ fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
         &disc_exprs,
         catch_all_position,
         &discriminant_type,
-    );
+    )?;
 
     if let Some(idx) = catch_all_position {
         let catch_all_arm = decode_exprs.remove(idx);
@@ -135,13 +143,13 @@ fn decode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
         });
     }
 
-    quote! {
+    Ok(quote! {
         #create_enum_decoder_expr
         #decode_discriminant_expr
         match disc_val {
             #( #decode_exprs ),*
         }
-    }
+    })
 }
 
 fn gen_variant_decode_arms(
@@ -149,12 +157,12 @@ fn gen_variant_decode_arms(
     disc_exprs: &[TokenStream],
     catch_all_position: Option<usize>,
     discriminant_type: &DiscriminantType,
-) -> Vec<TokenStream> {
+) -> Result<Vec<TokenStream>, SynError> {
     let mut disc_iter = disc_exprs.iter();
     variants
         .iter()
         .enumerate()
-        .map(|(i, v)| {
+        .map(|(i, v)| -> Result<TokenStream, SynError> {
             let variant_name = &v.ident;
             let disc_expr = disc_iter.next().unwrap();
             let is_catch_all = catch_all_position == Some(i);
@@ -164,7 +172,7 @@ fn gen_variant_decode_arms(
                 quote! { #disc_expr }
             };
 
-            match &v.fields {
+            Ok(match &v.fields {
                 Fields::Unit => {
                     quote! {
                         #pattern => {
@@ -179,35 +187,32 @@ fn gen_variant_decode_arms(
                             1 => {
                                 let ty = &fields.unnamed[0].ty;
                                 if !type_matches_discriminant(ty, discriminant_type) {
-                                    return SynError::new_spanned(
+                                    return Err(SynError::new_spanned(
                                         ty.clone(),
                                         format!(
-                                            "catch_all variant payload type must be `{}`",
+                                            "catch_all variant payload type must be {}, as #[repr(...)]",
                                             discriminant_type_name(discriminant_type)
                                         ),
-                                    )
-                                    .into_compile_error();
+                                    ));
                                 }
                             }
                             2 => {
                                 let ty = &fields.unnamed[0].ty;
                                 if !type_matches_discriminant(ty, discriminant_type) {
-                                    return SynError::new_spanned(
+                                    return Err(SynError::new_spanned(
                                         ty.clone(),
                                         format!(
                                             "catch_all variant first field type must be `{}`",
                                             discriminant_type_name(discriminant_type)
                                         ),
-                                    )
-                                    .into_compile_error();
+                                    ));
                                 }
                             }
                             _ => {
-                                return SynError::new(
+                                return Err(SynError::new(
                                     v.ident.span(),
                                     "catch_all variant must be unit, newtype (single field), or tuple with 2 fields",
-                                )
-                                .into_compile_error();
+                                ));
                             }
                         }
 
@@ -258,11 +263,10 @@ fn gen_variant_decode_arms(
                 }
                 Fields::Named(fields) => {
                     if is_catch_all {
-                        SynError::new(
+                        return Err(SynError::new(
                             v.ident.span(),
                             "catch_all cannot be applied to variants with named fields",
-                        )
-                        .into_compile_error()
+                        ));
                     } else {
                         let field_vars: Vec<_> = fields
                             .named
@@ -290,7 +294,7 @@ fn gen_variant_decode_arms(
                         }
                     }
                 }
-            }
+            })
         })
         .collect()
 }

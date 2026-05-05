@@ -12,11 +12,16 @@ pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::
     let name = &derive_input.ident;
 
     let expanded = match derive_input.data {
-        Data::Struct(d_struct) => encode_impl_for_struct(d_struct),
+        Data::Struct(d_struct) => Ok(encode_impl_for_struct(d_struct)),
         Data::Enum(d_enum) => encode_impl_for_enum(d_enum, &derive_input.attrs),
         Data::Union(_d_union) => {
             unimplemented!("Union types are not supported yet")
         }
+    };
+
+    let expanded = match expanded {
+        Ok(tokens) => tokens,
+        Err(e) => return proc_macro::TokenStream::from(e.into_compile_error()),
     };
 
     let impl_block = quote! {
@@ -51,7 +56,10 @@ fn encode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     }
 }
 
-fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStream {
+fn encode_impl_for_enum(
+    d_enum: syn::DataEnum,
+    attrs: &[Attribute],
+) -> Result<TokenStream, SynError> {
     let disc_variant = parse_repr(attrs);
     let discriminant_type = parse_repr_type(attrs).unwrap_or(DiscriminantType::USize);
 
@@ -68,11 +76,10 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
             .filter(|v| is_catch_all_variant(v))
             .nth(1)
             .unwrap();
-        return SynError::new(
+        return Err(SynError::new(
             second.ident.span(),
             "only one #[binserde(catch_all)] variant is allowed",
-        )
-        .into_compile_error();
+        ));
     }
 
     let catch_all_position = d_enum.variants.iter().position(|v| is_catch_all_variant(v));
@@ -102,13 +109,13 @@ fn encode_impl_for_enum(d_enum: syn::DataEnum, attrs: &[Attribute]) -> TokenStre
                 &discriminant_type,
             )
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
-    quote! {
+    Ok(quote! {
         match self {
             #( #variants ),*
         }
-    }
+    })
 }
 
 fn gen_variant_encode_arm(
@@ -117,17 +124,15 @@ fn gen_variant_encode_arm(
     disc_variant: &TokenStream,
     is_catch_all: bool,
     discriminant_type: &DiscriminantType,
-) -> TokenStream {
+) -> Result<TokenStream, SynError> {
     let variant_name = &variant.ident;
 
     match &variant.fields {
-        syn::Fields::Unit => {
-            quote! {
-                Self::#variant_name => {
-                    encoder.encode_variant(#disc, &())
-                }
+        syn::Fields::Unit => Ok(quote! {
+            Self::#variant_name => {
+                encoder.encode_variant(#disc, &())
             }
-        }
+        }),
         syn::Fields::Unnamed(_) => {
             if is_catch_all {
                 let field_count = variant.fields.iter().count();
@@ -135,53 +140,50 @@ fn gen_variant_encode_arm(
                     1 => {
                         let ty = &variant.fields.iter().next().unwrap().ty;
                         if !type_matches_discriminant(ty, discriminant_type) {
-                            return SynError::new_spanned(
+                            return Err(SynError::new_spanned(
                                 ty.clone(),
                                 format!(
-                                    "catch_all variant payload type must be `{}`",
-                                    discriminant_type_name(discriminant_type)
+                                    "catch_all variant payload type must be {}, as #[repr(...)]",
+                                    discriminant_type_name(discriminant_type),
                                 ),
-                            )
-                            .into_compile_error();
+                            ));
                         }
                         let f0 = format_ident!("_f0");
                         let disc_val = quote! {
                             ::binserde::Discriminant::#disc_variant(*#f0)
                         };
-                        quote! {
+                        Ok(quote! {
                             Self::#variant_name(#f0) => {
                                 encoder.encode_variant(#disc_val, &())
                             }
-                        }
+                        })
                     }
                     2 => {
                         let first_ty = &variant.fields.iter().next().unwrap().ty;
                         if !type_matches_discriminant(first_ty, discriminant_type) {
-                            return SynError::new_spanned(
+                            return Err(SynError::new_spanned(
                                 first_ty.clone(),
                                 format!(
                                     "catch_all variant first field type must be `{}`",
                                     discriminant_type_name(discriminant_type)
                                 ),
-                            )
-                            .into_compile_error();
+                            ));
                         }
                         let f0 = format_ident!("_f0");
                         let f1 = format_ident!("_f1");
                         let disc_val = quote! {
                             ::binserde::Discriminant::#disc_variant(*#f0)
                         };
-                        quote! {
+                        Ok(quote! {
                             Self::#variant_name(#f0, #f1) => {
                                 encoder.encode_variant(#disc_val, &(#f1,))
                             }
-                        }
+                        })
                     }
-                    _ => SynError::new(
+                    _ => Err(SynError::new(
                         variant.ident.span(),
                         "catch_all variant must be unit, newtype (single field), or tuple with 2 fields",
-                    )
-                    .into_compile_error(),
+                    )),
                 }
             } else {
                 let fields: Vec<_> = variant
@@ -190,20 +192,19 @@ fn gen_variant_encode_arm(
                     .enumerate()
                     .map(|(i, _)| format_ident!("_f{}", i))
                     .collect();
-                quote! {
+                Ok(quote! {
                     Self::#variant_name(#(#fields),*) => {
                         encoder.encode_variant(#disc, &(#(#fields),*))
                     }
-                }
+                })
             }
         }
         syn::Fields::Named(_) => {
             if is_catch_all {
-                SynError::new(
+                Err(SynError::new(
                     variant.ident.span(),
                     "catch_all cannot be applied to variants with named fields",
-                )
-                .into_compile_error()
+                ))
             } else {
                 let field_names: Vec<_> = variant
                     .fields
@@ -211,11 +212,11 @@ fn gen_variant_encode_arm(
                     .map(|f| f.ident.as_ref().unwrap())
                     .collect();
                 let refs: Vec<_> = field_names.iter().map(|n| quote! { &#n }).collect();
-                quote! {
+                Ok(quote! {
                     Self::#variant_name { #(#field_names),* } => {
                         encoder.encode_variant(#disc, &(#(#refs),*))
                     }
-                }
+                })
             }
         }
     }

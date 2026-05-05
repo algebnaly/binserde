@@ -98,6 +98,13 @@ impl<T: Decode> Decode for Option<T> {
     }
 }
 
+impl<T: Decode> Decode for Box<T> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, D::Error> {
+        let t = T::decode(decoder)?;
+        Ok(Box::new(t))
+    }
+}
+
 macro_rules! replace_expr {
     ($_t:tt $sub:expr) => {
         $sub
