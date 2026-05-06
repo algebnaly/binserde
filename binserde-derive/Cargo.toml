@@ -9,6 +9,6 @@ description = "derive macros for binserde"
 proc-macro = true
 
 [dependencies]
-syn = { version = "2" }
+syn = "2"
 quote = "1"
 proc-macro2 = "1"
