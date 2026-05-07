@@ -1,4 +1,4 @@
-use binserde::{Decode, Encode};
+use minibserde::{Decode, Encode};
 
 #[allow(unused)]
 #[derive(Encode, Decode)]

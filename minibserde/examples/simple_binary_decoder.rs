@@ -1,5 +1,5 @@
-use binserde_core::de::Decoder;
-use binserde_core::de::{EnumDecoder, MapDecoder, SeqDecoder, StructDecoder, TupleDecoder};
+use minibserde_core::de::Decoder;
+use minibserde_core::de::{EnumDecoder, MapDecoder, SeqDecoder, StructDecoder, TupleDecoder};
 
 struct SimpleBinaryDecoder {
     input: Vec<u8>,
@@ -116,7 +116,7 @@ impl Decoder for &mut SimpleBinaryDecoder {
         Ok(f64::from_le_bytes(buf))
     }
 
-    fn decode_option<T: binserde_core::Decode>(self) -> Result<Option<T>, Self::Error> {
+    fn decode_option<T: minibserde_core::Decode>(self) -> Result<Option<T>, Self::Error> {
         let tag = self.decode_u8()?;
         if tag == 0 {
             Ok(None)
@@ -206,7 +206,7 @@ impl EnumDecoder for &mut SimpleBinaryDecoder {
         Ok(v as isize)
     }
 
-    fn decode_field<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_field<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -220,7 +220,7 @@ impl EnumDecoder for &mut SimpleBinaryDecoder {
 
 impl StructDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_field<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_field<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -234,7 +234,7 @@ impl SeqDecoder for &mut SimpleBinaryDecoder {
         let v = self.decode_u32()?;
         Ok(v as usize)
     }
-    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_element<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -244,10 +244,10 @@ impl SeqDecoder for &mut SimpleBinaryDecoder {
 
 impl MapDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_key<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_key<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
-    fn decode_value<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_value<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -257,7 +257,7 @@ impl MapDecoder for &mut SimpleBinaryDecoder {
 
 impl TupleDecoder for &mut SimpleBinaryDecoder {
     type Error = String;
-    fn decode_element<T: binserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
+    fn decode_element<T: minibserde_core::Decode>(&mut self) -> Result<T, Self::Error> {
         T::decode(&mut **self)
     }
     fn end(&mut self) -> Result<(), Self::Error> {
@@ -273,7 +273,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use binserde_core::de::Decode;
+    use minibserde_core::de::Decode;
 
     use super::*;
 

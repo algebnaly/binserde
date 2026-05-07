@@ -1,9 +1,9 @@
 [package]
-name = "binserde-derive"
+name = "minibserde-derive"
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "derive macros for binserde"
+description = "derive macros for minibserde"
 
 [lib]
 proc-macro = true

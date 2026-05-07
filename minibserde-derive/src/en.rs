@@ -25,8 +25,8 @@ pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::
     };
 
     let impl_block = quote! {
-      impl ::binserde::Encode for #name {
-          fn encode<E: ::binserde::Encoder>(&self, encoder: E) -> Result<(), E::Error> {
+      impl ::minibserde::Encode for #name {
+          fn encode<E: ::minibserde::Encoder>(&self, encoder: E) -> Result<(), E::Error> {
               #expanded
           }
       }
@@ -45,14 +45,14 @@ fn encode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
             quote! { &self.#idx }
         };
         quote! {
-            ::binserde::StructEncoder::encode_field(&mut s, #field_ref)?;
+            ::minibserde::StructEncoder::encode_field(&mut s, #field_ref)?;
         }
     });
 
     quote! {
         let mut s = encoder.encode_struct(#field_count)?;
         #( #encode_fields )*
-        ::binserde::StructEncoder::end(&mut s)
+        ::minibserde::StructEncoder::end(&mut s)
     }
 }
 
@@ -78,7 +78,7 @@ fn encode_impl_for_enum(
             .unwrap();
         return Err(SynError::new(
             second.ident.span(),
-            "only one #[binserde(catch_all)] variant is allowed",
+            "only one #[minibserde(catch_all)] variant is allowed",
         ));
     }
 
@@ -98,7 +98,7 @@ fn encode_impl_for_enum(
         .map(|(i, (variant, disc_expr))| {
             let is_catch_all = catch_all_position == Some(i);
             let disc = quote! {
-                ::binserde::Discriminant::#disc_variant(#disc_expr)
+                ::minibserde::Discriminant::#disc_variant(#disc_expr)
             };
 
             gen_variant_encode_arm(
@@ -150,7 +150,7 @@ fn gen_variant_encode_arm(
                         }
                         let f0 = format_ident!("_f0");
                         let disc_val = quote! {
-                            ::binserde::Discriminant::#disc_variant(*#f0)
+                            ::minibserde::Discriminant::#disc_variant(*#f0)
                         };
                         Ok(quote! {
                             Self::#variant_name(#f0) => {
@@ -172,7 +172,7 @@ fn gen_variant_encode_arm(
                         let f0 = format_ident!("_f0");
                         let f1 = format_ident!("_f1");
                         let disc_val = quote! {
-                            ::binserde::Discriminant::#disc_variant(*#f0)
+                            ::minibserde::Discriminant::#disc_variant(*#f0)
                         };
                         Ok(quote! {
                             Self::#variant_name(#f0, #f1) => {

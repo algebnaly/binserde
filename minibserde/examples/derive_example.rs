@@ -1,4 +1,4 @@
-use binserde::{Decode, Encode};
+use minibserde::{Decode, Encode};
 
 fn main() {}
 
@@ -18,6 +18,6 @@ enum MyColor {
     Red = 1,
     Green = 4,
     Blue = 9,
-    #[binserde(catch_all)]
+    #[minibserde(catch_all)]
     Purple(u8),
 }

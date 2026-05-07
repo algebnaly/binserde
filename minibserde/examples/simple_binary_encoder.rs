@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use binserde::{Discriminant, Encode, MapEncoder, SeqEncoder, StructEncoder};
-use binserde_core::en::{Encoder, TupleEncoder};
+use minibserde::{Discriminant, Encode, MapEncoder, SeqEncoder, StructEncoder};
+use minibserde_core::en::{Encoder, TupleEncoder};
 
 struct SimpleBinaryEncoder {
     output: Vec<u8>,

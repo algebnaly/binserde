@@ -26,8 +26,8 @@ pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::
     };
 
     let impl_block = quote! {
-      impl ::binserde::Decode for #name {
-          fn decode<D: ::binserde::Decoder>(decoder: D) -> Result<Self, D::Error> {
+      impl ::minibserde::Decode for #name {
+          fn decode<D: ::minibserde::Decoder>(decoder: D) -> Result<Self, D::Error> {
               #expanded
           }
       }
@@ -47,12 +47,12 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
             let ty = &field.ty;
             if let Some(name) = &field.ident {
                 quote! {
-                    let #name = ::binserde::StructDecoder::decode_field::<#ty>(&mut s)?;
+                    let #name = ::minibserde::StructDecoder::decode_field::<#ty>(&mut s)?;
                 }
             } else {
                 let var = format_ident!("_f{}", i);
                 quote! {
-                    let #var = ::binserde::StructDecoder::decode_field::<#ty>(&mut s)?;
+                    let #var = ::minibserde::StructDecoder::decode_field::<#ty>(&mut s)?;
                 }
             }
         })
@@ -81,7 +81,7 @@ fn decode_impl_for_struct(d_struct: syn::DataStruct) -> TokenStream {
     quote! {
         let mut s = decoder.decode_struct(#field_count)?;
         #( #decode_fields )*
-        ::binserde::StructDecoder::end(&mut s)?;
+        ::minibserde::StructDecoder::end(&mut s)?;
         Ok(#init)
     }
 }
@@ -107,7 +107,7 @@ fn decode_impl_for_enum(
             .unwrap();
         return Err(SynError::new(
             second.ident.span(),
-            "only one #[binserde(catch_all)] variant is allowed",
+            "only one #[minibserde(catch_all)] variant is allowed",
         ));
     }
 
@@ -119,7 +119,7 @@ fn decode_impl_for_enum(
     let disc_exprs = discriminants_expr(discriminants);
 
     let create_enum_decoder_expr = quote! {
-        let mut enum_decoder = ::binserde::Decoder::decode_variant(decoder)?;
+        let mut enum_decoder = ::minibserde::Decoder::decode_variant(decoder)?;
     };
 
     let decode_discriminant_expr = decode_discriminant(&discriminant_type);
@@ -139,7 +139,7 @@ fn decode_impl_for_enum(
         decode_exprs.push(catch_all_arm);
     } else {
         decode_exprs.push(quote! {
-            _ => Err(::binserde::EnumDecoder::on_unknown_discriminant(&mut enum_decoder, disc_val)),
+            _ => Err(::minibserde::EnumDecoder::on_unknown_discriminant(&mut enum_decoder, disc_val)),
         });
     }
 
@@ -227,7 +227,7 @@ fn gen_variant_decode_arms(
                             let var = format_ident!("_f1");
                             quote! {
                                 #pattern => {
-                                    let #var = ::binserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
+                                    let #var = ::minibserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
                                     Ok(Self::#variant_name(disc_val, #var))
                                 }
                             }
@@ -241,7 +241,7 @@ fn gen_variant_decode_arms(
                                 let var = format_ident!("_f{}", i);
                                 let ty = &f.ty;
                                 quote! {
-                                    let #var = ::binserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
+                                    let #var = ::minibserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
                                 }
                             })
                             .collect();
@@ -275,7 +275,7 @@ fn gen_variant_decode_arms(
                                 let name = f.ident.as_ref().unwrap();
                                 let ty = &f.ty;
                                 quote! {
-                                    let #name = ::binserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
+                                    let #name = ::minibserde::EnumDecoder::decode_field::<#ty>(&mut enum_decoder)?;
                                 }
                             })
                             .collect();
@@ -303,62 +303,62 @@ fn decode_discriminant(discriminant_type: &DiscriminantType) -> TokenStream {
     match discriminant_type {
         DiscriminantType::U8 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_u8(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_u8(&mut enum_decoder)?;
             }
         }
         DiscriminantType::U16 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_u16(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_u16(&mut enum_decoder)?;
             }
         }
         DiscriminantType::U32 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_u32(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_u32(&mut enum_decoder)?;
             }
         }
         DiscriminantType::U64 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_u64(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_u64(&mut enum_decoder)?;
             }
         }
         DiscriminantType::U128 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_u128(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_u128(&mut enum_decoder)?;
             }
         }
         DiscriminantType::USize => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_usize(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_usize(&mut enum_decoder)?;
             }
         }
         DiscriminantType::I8 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_i8(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_i8(&mut enum_decoder)?;
             }
         }
         DiscriminantType::I16 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_i16(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_i16(&mut enum_decoder)?;
             }
         }
         DiscriminantType::I32 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_i32(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_i32(&mut enum_decoder)?;
             }
         }
         DiscriminantType::I64 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_i64(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_i64(&mut enum_decoder)?;
             }
         }
         DiscriminantType::I128 => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_i128(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_i128(&mut enum_decoder)?;
             }
         }
         DiscriminantType::ISize => {
             quote! {
-                let disc_val = ::binserde::EnumDecoder::decode_discriminant_isize(&mut enum_decoder)?;
+                let disc_val = ::minibserde::EnumDecoder::decode_discriminant_isize(&mut enum_decoder)?;
             }
         }
     }

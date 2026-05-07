@@ -1,10 +1,10 @@
 [package]
-name = "binserde"
+name = "minibserde"
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "serialization and deserialization library for binary format"
 
 [dependencies]
-binserde-core = "0.1.0"
-#binserde-derive = "0.1.0"
+minibserde-core = { workspace = true }
+minibserde-derive = { workspace = true }

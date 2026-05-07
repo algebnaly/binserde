@@ -18,7 +18,7 @@ pub(crate) enum DiscriminantType {
 }
 
 pub(crate) fn is_catch_all_attr(attr: &Attribute) -> bool {
-    attr.path().is_ident("binserde")
+    attr.path().is_ident("minibserde")
         && attr
             .parse_args::<Ident>()
             .ok()

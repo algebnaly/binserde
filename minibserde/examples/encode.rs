@@ -1,4 +1,4 @@
-use binserde::{Discriminant, Encode, Encoder};
+use minibserde::{Discriminant, Encode, Encoder};
 
 fn main() {
     // Example showing manual enum encoding with the Discriminant enum

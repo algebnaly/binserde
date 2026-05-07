@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-pub use binserde_core::{
+pub use minibserde_core::{
     Discriminant,
     de::{Decode, Decoder, EnumDecoder, MapDecoder, SeqDecoder, StructDecoder, TupleDecoder},
     en::{Encode, Encoder, MapEncoder, SeqEncoder, StructEncoder, TupleEncoder},
@@ -106,4 +106,4 @@ impl<const N: usize> DerefMut for ByteArray<N> {
     }
 }
 
-pub use binserde_derive::{Decode, Encode};
+pub use minibserde_derive::{Decode, Encode};

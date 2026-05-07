@@ -6,12 +6,12 @@ mod de;
 mod en;
 mod enum_helper;
 
-#[proc_macro_derive(Encode, attributes(binserde))]
+#[proc_macro_derive(Encode, attributes(minibserde))]
 pub fn derive_encode(input: TokenStream) -> TokenStream {
     derive_encode_impl(input)
 }
 
-#[proc_macro_derive(Decode, attributes(binserde))]
+#[proc_macro_derive(Decode, attributes(minibserde))]
 pub fn derive_decode(input: TokenStream) -> TokenStream {
     derive_decode_impl(input)
 }

@@ -1,4 +1,4 @@
-use binserde::{Decode, Encode};
+use minibserde::{Decode, Encode};
 
 #[allow(unused)]
 #[derive(Encode, Decode)]
@@ -13,7 +13,7 @@ enum Color {
 enum WithUnitCatchAll {
     A,
     B,
-    #[binserde(catch_all)]
+    #[minibserde(catch_all)]
     Unknown,
 }
 
@@ -23,7 +23,7 @@ enum WithUnitCatchAll {
 enum WithNewtypeCatchAll {
     A,
     B,
-    #[binserde(catch_all)]
+    #[minibserde(catch_all)]
     Unknown(u32),
 }
 
@@ -33,7 +33,7 @@ enum WithNewtypeCatchAll {
 enum WithTupleCatchAll {
     A,
     B,
-    #[binserde(catch_all)]
+    #[minibserde(catch_all)]
     Unknown(u32, String),
 }
 
