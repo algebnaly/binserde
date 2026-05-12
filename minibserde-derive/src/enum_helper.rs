@@ -30,6 +30,40 @@ pub(crate) fn is_catch_all_variant(variant: &syn::Variant) -> bool {
     variant.attrs.iter().any(|a| is_catch_all_attr(a))
 }
 
+/// Validate catch_all variant rules: at most one, and must be the last variant.
+/// Returns the catch_all position if present.
+pub(crate) fn validate_catch_all(
+    variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+) -> Result<Option<usize>, syn::Error> {
+    let catch_all_positions: Vec<usize> = variants
+        .iter()
+        .enumerate()
+        .filter(|(_, v)| is_catch_all_variant(v))
+        .map(|(i, _)| i)
+        .collect();
+
+    if catch_all_positions.len() > 1 {
+        let second = &variants[catch_all_positions[1]];
+        return Err(syn::Error::new(
+            second.ident.span(),
+            "only one #[minibserde(catch_all)] variant is allowed",
+        ));
+    }
+
+    if let Some(&pos) = catch_all_positions.first() {
+        if pos != variants.len() - 1 {
+            let v = &variants[pos];
+            return Err(syn::Error::new(
+                v.ident.span(),
+                "#[minibserde(catch_all)] variant must be the last variant",
+            ));
+        }
+        Ok(Some(pos))
+    } else {
+        Ok(None)
+    }
+}
+
 pub(crate) fn type_matches_discriminant(ty: &syn::Type, disc_type: &DiscriminantType) -> bool {
     if let syn::Type::Path(type_path) = ty {
         if let Some(ident) = type_path.path.get_ident() {

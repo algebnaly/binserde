@@ -3,8 +3,8 @@ use quote::{format_ident, quote};
 use syn::{Attribute, Data, DeriveInput, Error as SynError, Fields, parse_macro_input};
 
 use crate::enum_helper::{
-    DiscriminantType, discriminant_type_name, discriminants_expr, is_catch_all_variant,
-    parse_repr_type, type_matches_discriminant,
+    DiscriminantType, discriminant_type_name, discriminants_expr, parse_repr_type,
+    type_matches_discriminant, validate_catch_all,
 };
 
 pub(crate) fn derive_decode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -91,25 +91,7 @@ fn decode_impl_for_enum(
     attrs: &[Attribute],
 ) -> Result<TokenStream, SynError> {
     let discriminant_type = parse_repr_type(attrs).unwrap_or(DiscriminantType::USize);
-
-    let catch_all_count = d_enum
-        .variants
-        .iter()
-        .filter(|v| is_catch_all_variant(v))
-        .count();
-
-    if catch_all_count > 1 {
-        let second = d_enum
-            .variants
-            .iter()
-            .filter(|v| is_catch_all_variant(v))
-            .nth(1)
-            .unwrap();
-        return Err(SynError::new(
-            second.ident.span(),
-            "only one #[minibserde(catch_all)] variant is allowed",
-        ));
-    }
+    let catch_all_position = validate_catch_all(&d_enum.variants)?;
 
     let discriminants = d_enum
         .variants
@@ -124,20 +106,34 @@ fn decode_impl_for_enum(
 
     let decode_discriminant_expr = decode_discriminant(&discriminant_type);
 
-    let catch_all_position = d_enum.variants.iter().position(|v| is_catch_all_variant(v));
+    // Generate const bindings for each non-catch-all discriminant so they
+    // can be used directly as match patterns (constants, const fn calls, and
+    // computed expressions are all valid as const initializers).
+    let disc_type_ident = format_ident!("{}", discriminant_type_name(&discriminant_type));
+    let mut const_bindings = Vec::new();
+    let mut disc_patterns: Vec<TokenStream> = Vec::new();
+    for (i, disc_expr) in disc_exprs.iter().enumerate() {
+        if catch_all_position == Some(i) {
+            disc_patterns.push(quote! { _ });
+            continue;
+        }
+        let const_name = format_ident!("_DISC_{}", i);
+        const_bindings.push(quote! {
+            const #const_name: #disc_type_ident = #disc_expr;
+        });
+        disc_patterns.push(quote! { #const_name });
+    }
 
     let variants: Vec<&syn::Variant> = d_enum.variants.iter().collect();
+    // catch_all is guaranteed to be last (or absent), so no reordering needed
     let mut decode_exprs = gen_variant_decode_arms(
         &variants,
-        &disc_exprs,
+        &disc_patterns,
         catch_all_position,
         &discriminant_type,
     )?;
 
-    if let Some(idx) = catch_all_position {
-        let catch_all_arm = decode_exprs.remove(idx);
-        decode_exprs.push(catch_all_arm);
-    } else {
+    if catch_all_position.is_none() {
         decode_exprs.push(quote! {
             _ => Err(::minibserde::EnumDecoder::on_unknown_discriminant(&mut enum_decoder, disc_val)),
         });
@@ -146,6 +142,7 @@ fn decode_impl_for_enum(
     Ok(quote! {
         #create_enum_decoder_expr
         #decode_discriminant_expr
+        #( #const_bindings )*
         match disc_val {
             #( #decode_exprs ),*
         }
@@ -154,23 +151,17 @@ fn decode_impl_for_enum(
 
 fn gen_variant_decode_arms(
     variants: &[&syn::Variant],
-    disc_exprs: &[TokenStream],
+    disc_patterns: &[TokenStream],
     catch_all_position: Option<usize>,
     discriminant_type: &DiscriminantType,
 ) -> Result<Vec<TokenStream>, SynError> {
-    let mut disc_iter = disc_exprs.iter();
     variants
         .iter()
+        .zip(disc_patterns.iter())
         .enumerate()
-        .map(|(i, v)| -> Result<TokenStream, SynError> {
+        .map(|(i, (v, pattern))| -> Result<TokenStream, SynError> {
             let variant_name = &v.ident;
-            let disc_expr = disc_iter.next().unwrap();
             let is_catch_all = catch_all_position == Some(i);
-            let pattern = if is_catch_all {
-                quote! { _ }
-            } else {
-                quote! { #disc_expr }
-            };
 
             Ok(match &v.fields {
                 Fields::Unit => {

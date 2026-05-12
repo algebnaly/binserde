@@ -11,13 +11,18 @@ enum MyEnum {
     Variant3(String, u32) = 41,
 }
 
+const VAL: u8 = 42;
+const fn foo() -> u8 {
+    64
+}
+
 #[allow(unused)]
 #[derive(Encode, Decode)]
 #[repr(u8)]
 enum MyColor {
     Red = 1,
-    Green = 4,
-    Blue = 9,
+    Green = VAL,
+    Blue = foo(),
     #[minibserde(catch_all)]
     Purple(u8),
 }

@@ -3,8 +3,8 @@ use quote::{format_ident, quote};
 use syn::{Attribute, Data, DeriveInput, Error as SynError, parse_macro_input};
 
 use crate::enum_helper::{
-    DiscriminantType, discriminant_type_name, discriminants_expr, is_catch_all_variant, parse_repr,
-    parse_repr_type, type_matches_discriminant,
+    DiscriminantType, discriminant_type_name, discriminants_expr, parse_repr,
+    parse_repr_type, type_matches_discriminant, validate_catch_all,
 };
 
 pub(crate) fn derive_encode_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -62,27 +62,7 @@ fn encode_impl_for_enum(
 ) -> Result<TokenStream, SynError> {
     let disc_variant = parse_repr(attrs);
     let discriminant_type = parse_repr_type(attrs).unwrap_or(DiscriminantType::USize);
-
-    let catch_all_count = d_enum
-        .variants
-        .iter()
-        .filter(|v| is_catch_all_variant(v))
-        .count();
-
-    if catch_all_count > 1 {
-        let second = d_enum
-            .variants
-            .iter()
-            .filter(|v| is_catch_all_variant(v))
-            .nth(1)
-            .unwrap();
-        return Err(SynError::new(
-            second.ident.span(),
-            "only one #[minibserde(catch_all)] variant is allowed",
-        ));
-    }
-
-    let catch_all_position = d_enum.variants.iter().position(|v| is_catch_all_variant(v));
+    let catch_all_position = validate_catch_all(&d_enum.variants)?;
 
     let discriminants = d_enum
         .variants
