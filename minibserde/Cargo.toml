@@ -1,10 +1,10 @@
 [package]
 name = "minibserde"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "serialization and deserialization library for binary format"
 
 [dependencies]
 minibserde-core = "0.1.0"
-minibserde-derive = "0.1.0"
+minibserde-deive = "0.2.0"
